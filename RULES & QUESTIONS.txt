@@ -34,6 +34,11 @@ Allowed Lines Full List:
 
 Tabs-spaces not important
 
+There can be variable names which includes "if,while..." in it but not only "if,while...":
+    sif = 3
+    gwhiles = 10
+    sprint = sif + gwhiles
+
 Case sensetive
 
 You do not have to check if the input is 32 bits

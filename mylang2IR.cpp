@@ -104,7 +104,7 @@ int main(int argc, char const *argv[])
 
     for (string i : lines){         //main for loop
 
-        if(i.find("while")<i.length()) {
+        if(i.find("while")<i.length()) { //this may not work check RULES & QUESTIONS file line 37
 
             vector<string> tokens;
             char charrr[i.length()+1];  //array of chars
