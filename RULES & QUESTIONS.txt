@@ -1,0 +1,50 @@
+----------------------RULES-----------------------
+There may be no white spaces between expresions
+
+No parser toll allowed except strtok
+
+If there are nested statement in input print syntax error
+
+In the case of syntax error:
+    Write the line number
+    Write syntax error
+    Do not produce llvm file
+    Stop after first error
+
+There cannot be lines containing:
+    only a variable like : line --> a
+    only multiple variables : a, b, c, (?)
+    only number : line --> 12
+    only some equation : line --> 3+a+b
+    only choose() function
+
+There can be an undefined variable in an expression :
+    d = 5
+    d = c + d + 3
+    (c will be threated as zero)
+
+Allowed Lines Full List:
+    - Empty
+    - #comment
+    - if (<exp>) {
+    - while (<exp>) {
+    - print(<exp>)
+    - assignment "="
+    - }
+
+Tabs-spaces not important
+
+Case sensetive
+
+You do not have to check if the input is 32 bits
+
+***There can be nested choose() function
+
+***There can be a statement like:
+    print(a+10*choose(b,c,d,e))
+
+While running the file we expect just one argument which is the file give error otherwise
+
+----------------------QUESTIONS---------------------
+
+Should we change to postfix notation using a stack or the one which proffesor mentioned?
