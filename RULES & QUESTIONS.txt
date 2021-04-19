@@ -50,6 +50,9 @@ You do not have to check if the input is 32 bits
 
 While running the file we expect just one argument which is the file give error otherwise
 
+
+1. list (){}=+-*/,
+2. list if while print choose
 ----------------------QUESTIONS---------------------
 
 Should we change to postfix notation using a stack or the one which proffesor mentioned?
