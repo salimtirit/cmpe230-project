@@ -9,10 +9,10 @@ using namespace std;
 
 int main(int argc, char const *argv[]){
     
-    string expr = "K+L-M*N+(O*P)*W/U/V*(T+Q)";
-    //string a = "+*-/*-//*/+-";
-    string q  = postfix(expr);
-    cout << q << endl;  
+    string expr = "KwwA+L-dM*N+(11O*P)*2W/U/V*(T+Q)";
+ 
+    stack<string> postfixExp  = postfix(expr);
+    evaluate(postfixExp);
     
     //KL+MN*-OP*W*U/V/T*+Q+
     
