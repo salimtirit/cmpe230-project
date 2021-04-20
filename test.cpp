@@ -7,14 +7,16 @@
 using namespace std;
 
 
-int main(int argc, char const *argv[]){
-    
-    string expr = "KwwA+L-dM*N+(11O*P)*2W/U/V*(T+Q)";
+int main(int argc, char const *argv[])
+{
+    string expr = "K+L-M*N+(O*P)W/U/V(T+Q)";
  
     stack<string> postfixExp  = postfix(expr);
-    evaluate(postfixExp);
-    
-    //KL+MN*-OP*W*U/V/T*+Q+
-    
+   // evaluate(postfixExp);
+    while(!postfixExp.empty()){
+        cout << postfixExp.top();
+        postfixExp.pop();
+    }
+    //KL+MN-OPWU/V/T*+Q+
     return 0;
 }
