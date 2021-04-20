@@ -7,70 +7,101 @@ using namespace std;
 string operators = "-+()/*";
 string bigger = "*/";
 string smaller = "-+";
+stack<string> postfixExp;
+stack<string> expression;
 stack<char> oper;
 
-string postfix(string expr)
-{
+stack<string> postfix(string expr) {
 
-    string postfixExp = "";
-    for (char ch : expr)
-    {
+    string var = "";
+    for (char ch : expr) {
 
-        if (operators.find(ch) < operators.length())
-        { // ch bir operator  // değiştir burayı
+        if (operators.find(ch) < operators.length()) { // ch bir operator  // değiştir burayı
 
-            if (oper.empty())
-            {                  // stack boş
+            postfixExp.push(var);
+            var = "";
+
+            if (oper.empty()) {                  // stack boş
                 oper.push(ch); // ch yi stack a koy
-            }
-            else
-            { // stack boş değil
+            } else { // stack boş değil
 
-                if (ch == ')')
-                {
+                if (ch == ')') {
 
-                    while (oper.top() != '(')
-                    {
+                    while (oper.top() != '(') {
 
-                        postfixExp = postfixExp + oper.top();
+                           string opTop(1, oper.top());
+                        postfixExp.push(opTop);
                         oper.pop();
                     }
 
                     oper.pop();
-                }
-                else
-                {
-                    // cout << "yeni gelen = " <<operators.find(ch) << "içeride olan = "<< operators.find(oper.top()) << endl;
-
-                    // cout << operators.find(ch)-operators.find(oper.top()) << endl;
-
-                    // cout << !(operators.find(ch)-operators.find(oper.top())>1) << endl;
-
-                    while (!oper.empty() && ch != '(' && oper.top() != '(')
-                    {
-                        if (smaller.find(oper.top()) < 2 && bigger.find(ch) < 2)
-                        {
+                } else {
+                    while (!oper.empty() && ch != '(' && oper.top() != '(') {
+                        if (smaller.find(oper.top()) < 2 && bigger.find(ch) < 2) {
                             break;
                         }
-
-                        postfixExp = postfixExp + oper.top();
+                         string opTop(1, oper.top());
+                        postfixExp.push(opTop);
                         oper.pop();
                     }
-
                     oper.push(ch);
                 }
             }
-        }
-        else
-        { //ch bir variable
-            postfixExp = postfixExp + ch;
+        } else { //ch bir variable
+            var = var + ch;
         }
     }
 
+    string opTop(1, oper.top());
+    postfixExp.push(opTop);
 
-    return postfixExp + oper.top();
+    while(!postfixExp.empty()){
+        expression.push(postfixExp.top());
+        postfixExp.pop();
+    }
+    
+    return expression;
 }
 
-int evaluate(string str){
+
+//string operators = "-+()/*";  yukarıda
+
+int evaluate(stack<string> postfixExp){
+
+    stack<string> taken;
+    while(!postfixExp.empty()){  // stack boş olana dek
+
+        string s_top = postfixExp.top();
+        if(operators.find(s_top)<operators.length()){  //s_top operator değil ise
+            taken.push(s_top); // diğer stack'e at
+            postfixExp.pop();
+
+        }else{  //s_top bir operator ise
+
+            string var1 = taken.top();
+            taken.pop();
+            string var2 = taken.top();
+            taken.pop();
+
+            if(s_top == "+"){
+
+            //%t1 = load i32* %var1
+            //%t2 = load i32* %var2
+            //%t3 = add i32* %t1, %t2
+            //store i32 %t3, i32* %var2   // var2=var1+var2
+            //taken.push(var2);
+  
+            }else if(s_top == "-"){
+            }else if(s_top == "/"){
+            }else{ //s_top == "*"
+            }
+
+
+        }
+
+
+
+    }
+
     return 0;
 }
