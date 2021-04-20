@@ -19,9 +19,18 @@ int main(int argc, char const *argv[])
     // }
     //KL+MN-OPWU/V/T*+Q+
     stack<string> exx;
+    
+    
     exx.push("+");
+    exx.push("B");
+    
+    exx.push("/");
+    exx.push("N");
+    
+    exx.push("*");
     exx.push("L");
     exx.push("K");
+
     
 
     evaluate(exx);
