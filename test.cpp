@@ -11,12 +11,19 @@ int main(int argc, char const *argv[])
 {
     string expr = "K+L-M*N+(O*P)W/U/V(T+Q)";
  
-    stack<string> postfixExp  = postfix(expr);
+    //stack<string> postfixExp  = postfix(expr);
    // evaluate(postfixExp);
-    while(!postfixExp.empty()){
-        cout << postfixExp.top();
-        postfixExp.pop();
-    }
+    // while(!postfixExp.empty()){
+    //     cout << postfixExp.top();
+    //     postfixExp.pop();
+    // }
     //KL+MN-OPWU/V/T*+Q+
+    stack<string> exx;
+    exx.push("+");
+    exx.push("L");
+    exx.push("K");
+    
+
+    evaluate(exx);
     return 0;
 }

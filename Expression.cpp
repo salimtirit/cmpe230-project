@@ -12,7 +12,6 @@ stack<string> expression;
 stack<char> oper;
 
 stack<string> postfix(string expr) {
-
     string var = "";
     for (char ch : expr) {
 
@@ -67,12 +66,12 @@ stack<string> postfix(string expr) {
 //string operators = "-+()/*";  yukarıda
 
 int evaluate(stack<string> postfixExp){
-
     stack<string> taken;
+    int namer = 0;
     while(!postfixExp.empty()){  // stack boş olana dek
 
         string s_top = postfixExp.top();
-        if(operators.find(s_top)<operators.length()){  //s_top operator değil ise
+        if(!(operators.find(s_top)<operators.length())){  //s_top operator değil ise
             taken.push(s_top); // diğer stack'e at
             postfixExp.pop();
 
@@ -84,7 +83,19 @@ int evaluate(stack<string> postfixExp){
             taken.pop();
 
             if(s_top == "+"){
+                string namer1 ="%t"+ namer + "";
+                string s1 = "%t"+namer1+" = load i32* %"+var1;
+                namer++;
+                string namer2 = namer + "";
+                string s2 = "%t"+namer2+" = load i32* %"+var2;
+                namer++;
+                string namer3 = namer + "";
+                string s3 = "%t"+namer3+" = add i32* %t"+namer1+", %t"+namer2;
 
+                cout << s1 << endl;
+                cout << s2 << endl;
+                cout << s3 << endl;
+                
             //%t1 = load i32* %var1
             //%t2 = load i32* %var2
             //%t3 = add i32* %t1, %t2
@@ -92,6 +103,7 @@ int evaluate(stack<string> postfixExp){
             //taken.push(var2);
   
             }else if(s_top == "-"){
+
             }else if(s_top == "/"){
             }else{ //s_top == "*"
             }
