@@ -12,76 +12,6 @@ using namespace std;
 stack<string> postfix;
 int varNamer = 0;
 
-string handleParnt(string expr){ // burası sırf parantezli kısımlara isim verip saklamak için  
-
-    string name = "par_" + to_string(varNamer);
-
-    string parntz = expr.substr(expr.find_last_of("(")+1);
-    parntz = parntz.substr(0,parntz.find_first_of(")")); // parentezli kısmın içi 
-
-    //parentezli kısmı map e falan koy
-    //içinden parentezli kısmı çıkar, isim koy returnle
-
-}
-
-void expres(string expr){ 
-
-    if(expr.find("(")){
-
-        expr = handleParnt(expr);       //parentezli kısmı çıkardım diyelim
-        
-        if (expr.find("+") != string::npos) { //+ içeriyorsa
-        postfix.push("+");
-        string right = expr.substr(expr.find_last_of("+")+1);  // + lı kısmın sağı solu
-        string left = expr.substr(0,expr.find_last_of("+"));
-        expres(right); //içinde + yok - olabilir
-        expres(left);
-
-        } else if (expr.find("-") != string::npos) { //+ içeriyorsa
-        postfix.push("-");
-        string right = expr.substr(expr.find_last_of("-")+1);
-        string left = expr.substr(0,expr.find_last_of("-")); 
-        terms(right); //içinde +, - yok direkt sonrakine gönderebilirsin
-        expres(left);
-
-        } else{  //içinde + - yok
-        terms(expr);
-        }
-    }
-}
-
-void terms(string term){
-
-        if (term.find("*") != string::npos) { //+ içeriyorsa
-        postfix.push("*");
-        string right = term.substr(term.find_last_of("*")+1);
-        string left = term.substr(0,term.find_last_of("*")); 
-        terms(right); //içinde * yok / olabilir
-        terms(left);
-
-        } else if (term.find("-") != string::npos) { //+ içeriyorsa
-        postfix.push("/");
-        string right = term.substr(term.find_last_of("/")+1);
-        string left = term.substr(0,term.find_last_of("/")); 
-        factors(right); //içinde *, / yok direkt sonrakine gönderebilirsin
-        terms(left);
-
-        }else{  //içinde * / yok
-        factors(term);
-        }
-}
-
-void factors(string factor){
-
-    if(factor.find("par_")!= string::npos){
-    //string expr = map(factor);
-    //expres(expr);
-
-    }else{ //variable name ise veya number ise
-    postfix.push(factor);
-    }
-}
-
 int main(int argc, char const *argv[])
 {
     vector<string> tokens;
@@ -147,18 +77,6 @@ int main(int argc, char const *argv[])
          }
         
     }
-
-    vector<string> variables;
-    // for (string s : variables)
-    // {
-    //     if (s == "x")
-    //     {
-    //         cout << "ckjldk" << endl;
-    //     }
-    // }
-    // string a = "a=12+22";
-
-    // cout << a.find("=");
 
     return 0;
 }
