@@ -10,6 +10,11 @@ string smaller = "-+";
 stack<string> postfixExp;
 stack<string> expression;
 stack<char> oper;
+//----------------------TODO-------------------------------------------
+//variable values must be checked
+//can be a function findVariable which returns true/false and also changes a value with alias operator
+//if the variables are not defined before they need to be equal to zero
+//postfix and evaluate should work together
 
 stack<string> postfix(string expr) {
     string var = "";
@@ -81,7 +86,10 @@ int evaluate(stack<string> postfixExp){
             postfixExp.pop();
 
         }else{  //s_top bir operator ise
-
+            
+            //before evaluating we need to check if the variable is defined before. findVariable function. 
+            //If not defined we need to make it zero but before initializing
+            //to zero we need to check if the variable conditions are satisfied. 
             string var1 = taken.top();
             taken.pop();
             string var2 = taken.top();
@@ -113,6 +121,8 @@ int evaluate(stack<string> postfixExp){
                     string s3 = "%t"+namer3+" = mul i32 %t"+var2+", %t"+namer2;
                     cout << s3 << endl;
                 }else{
+
+                    //This is going to be (?) sdiv instead of udiv check piazza
                     string s3 = "%t"+namer3+" = udiv i32 %t"+var2+", %t"+namer2;
                     cout << s3 << endl;
                 }
