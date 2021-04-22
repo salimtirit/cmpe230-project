@@ -42,31 +42,16 @@ int main(int argc, char const *argv[])
         string i = lines[lineNumber];
         i.erase(remove(i.begin(), i.end(), '\t'), i.end()); // removes all tab characters
         i.erase(remove(i.begin(), i.end(), ' '), i.end());  //removes all spaces
-        //this part is just for assignment
-        if (i.find("=") < i.length())
+       
+        if (i.find("=") < i.length())    //this part is just for assignment
         {
             int position = i.find("=");
             string variable = i.substr(0, position);
             string otherPart = i.substr(position + 1, i.length());
-            if (isValidVariable(variable))
-            {
-                int value; // -------------------------- 3a * 5 isValid in Expression ?? write the funcrtion for this
-                if (otherPart.find("-") < otherPart.size() || otherPart.find("+") < otherPart.size() || otherPart.find("(") < otherPart.size() 
-                    || otherPart.find(")") < otherPart.size() || otherPart.find("*") < otherPart.size() || otherPart.find("/") < otherPart.size())
-                {
-                    string rightPart = evaluate(postfix(otherPart)); //this part is going to change we may need to call
-                    cout << "store i32 " << rightPart  << ", i32* %" << variable << endl;
-                    //evaluate from inside postfix or sth.
-                    //and also if there is a problem with the exp. we need to terminate the program
-                }
-                if (isValidNumber(otherPart, value))
-                {
-                    //?????? Do we need to check if the variable already exists ???????
-                    //actually i am not sure adlkjsldk
-                    //will be written here
-                    //puts the pair in the map
-                    declareVariable(variable,value);
-                }
+
+            if (isValidVariable(variable)) {            
+                string rightPart = evaluate(otherPart); //this part is going to change we may need to call
+                cout << "store i32 " << rightPart  << ", i32* %" << variable << endl;                          
             }
         }
     }
