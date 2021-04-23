@@ -1,22 +1,30 @@
 #include <iostream>
+#include <algorithm>
 #include <fstream>
-#include <cstring>
 #include <vector>
-#include <stack>
+#include "Expression.cpp"
 
 using namespace std;
-//there can be a map for variables
-//whenever we see a string type in "factor" part, after checking whether it was parentezli expression
-// we can add it to the map
 
-stack<string> postfix;
-int varNamer = 0;
+void assign(string i)
+{
+    int position = i.find("=");
+    string variable = i.substr(0, position);
+    string otherPart = i.substr(position + 1, i.length());
+
+    if (isValidVariable(variable))
+    {
+        string rightPart = evaluate(otherPart); //this part is going to change we may need to call
+        cout << "store i32 " << rightPart << ", i32* %" << variable << endl;
+    }
+}
 
 int main(int argc, char const *argv[])
 {
+    cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "input.txt";   //argv[1];
+    string inputFile = "input1.txt";  //argv[1];
     string outputFile = "output.txt"; //argv[2];
 
     ifstream infile;
@@ -28,55 +36,48 @@ int main(int argc, char const *argv[])
     vector<string> lines;
     string line;
 
-    while (getline(infile, line)){  //take lines
-        lines.push_back(line);  
+    while (getline(infile, line))
+    { //take lines
+        lines.push_back(line);
     }
 
-    for (string i : lines){         //main for loop
+    for (lineNumber = 0; lineNumber < lines.size(); lineNumber++)
+    { //main for loop
+        string i = lines[lineNumber];
+        i.erase(remove(i.begin(), i.end(), '\t'), i.end()); // removes all tab characters
+        i.erase(remove(i.begin(), i.end(), ' '), i.end());  //removes all spaces
 
-        if(i.find("while")<i.length()) { //this may not work check RULES & QUESTIONS file line 37
+        if (i.find("#") < i.length())
+        {
+            i = i.substr(i.begin(), i.find("#"));
+        }
 
-            vector<string> tokens;
-            char charrr[i.length()+1];  //array of chars
-            strcpy(charrr, i.c_str());  //string copy
-            char* token = strtok(charrr,"()");
-            while (token != NULL)
-            {
-                tokens.push_back(token);
-                token = strtok(NULL,"()");  //split strings into tokens
-            }
-            int truthValue = findInVariables(tokens[1]);
-            if(truthValue){
-
-            }else{
-                
-            }
-
-        } else if(i.find("=")!= string::npos){  
-
-            char charrr[i.length()+1];  //array of chars, line ın character uzunluğu kadar
-            strcpy(charrr, i.c_str());  //string copy
-            char* token = strtok(charrr,"=");
-
-            vector<string> tokens;
-
-            while (token != NULL) {
-                tokens.push_back(token);
-                token = strtok(NULL,"=");  //split strings into tokens
-            }
-
-            // = kısmı gitti şimdi elimizde expression var.
-            // variable olan tokens[0]'ı map e gönder?
-
-            expres(tokens[1]); //expression kısmı için postfix notation oluşturacak stack'te
-
-         } else if(i.find("print")) {
-            
-         } else {
-
-         }
-        
+        if (i.find("=") < i.length()) //this part is just for assignment
+        {
+            assign(i);
+        }
+        else if (i.find("while("))
+        {
+            //while.cpp
+        }
+        else if (i.find("if("))
+        {
+        }
+        else if (i.find("print("))
+        {
+            //print the given variables
+        }
+        else if (i == "")
+        {
+            //do nothing
+            continue;
+        }
+        else
+        {
+            //syntax error
+        }
     }
-
+    cout << "ret i32 0" << endl; //return 0
+    cout << "}" << endl;         //end of main
     return 0;
 }

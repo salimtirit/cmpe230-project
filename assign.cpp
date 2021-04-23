@@ -9,8 +9,12 @@
 using namespace std;
 
 //--------------------------!!!!!! C A U T I O N !!!!!!!-------------------------------------
-//main part and functions will be copied to mylang2IR.cpp or will be adjusted for external usage if it is okey
-//please read the comments
+//
+// Main part is copied to mylang2IR.cpp. Functions are copied to Expression.cpp.
+//
+//                      This file is not being used anymore
+//
+//-------------------------------------------------------------------------------------------
 
 int main(int argc, char const *argv[])
 {
@@ -33,9 +37,6 @@ int main(int argc, char const *argv[])
     { //take lines
         lines.push_back(line);
     }
-
-
-    string operators = "-+()/*";
 
     for (lineNumber = 0; lineNumber < lines.size(); lineNumber++)
     {

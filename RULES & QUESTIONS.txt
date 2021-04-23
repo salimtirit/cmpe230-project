@@ -56,3 +56,16 @@ While running the file we expect just one argument which is the file give error 
 ----------------------QUESTIONS---------------------
 
 Should we change to postfix notation using a stack or the one which proffesor mentioned?
+
+%t7 = load i32* %f1 ---> what is this for?
+    anladım sanırım. 
+    print statement gelebilir o yüzden bizim bir şekilde llvm den
+    sonucu öğrenmemiz gerekiyor bunu da implement etmemiz gerekecek
+    çünkü sonucu biz hesaplamıyoruz buna bakılacak
+
+
+------------------> TODO
+en son basmak için cout ları assign ve diğerleri diye ayır
+önce assignı bas sonra diğerlerini
+
+parantez kapatma olayını düşün

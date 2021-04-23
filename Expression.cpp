@@ -20,18 +20,19 @@ int namer = 0;
 //if the variables are not defined before they need to be equal to zero
 //postfix and evaluate should work together
 
-void declareVariable(string name,int value = 0){
-      if(variables.find(name)==variables.end()){
-             cout << "%" << name << " = alloca i32" << endl;
-        }
-    variables[name]=value;    //  variables.insert(pair<string,int>(name,value));
-    cout << "store i32 " << variables.find(name)->second << ", i32* %" << name << endl; //doğru çalışmıyor? 12 yerine 0 geldi?
-  
+void declareVariable(string name, int value = 0)
+{
+    if (variables.find(name) == variables.end())
+    {
+        cout << "%" << name << " = alloca i32" << endl;
+    }
+    variables[name] = value;                              //  variables.insert(pair<string,int>(name,value));
+    cout << "store i32 " << variables.find(name)->second  << ", i32* %" << name << endl; //variables[name]->second
 }
 
 //returns true if the variable is valid
 //valid variable: first character from alphabet (upper or lowercase) preceeding with alphanumeric characters
-bool isValidVariable(string s)  //variable
+bool isValidVariable(string s) //variable
 {
     int firstChr = s[0];
     if ((firstChr > 96 && firstChr < 123) || (firstChr > 64 && firstChr < 90)) // all ascii table values
@@ -46,12 +47,14 @@ bool isValidVariable(string s)  //variable
                 //return false;
             }
         }
-        if(variables.find(s)==variables.end()){
+        if (variables.find(s) == variables.end())
+        {
             declareVariable(s);
         }
         return true;
-
-    } else if (firstChr > 47 && firstChr < 58){ //number
+    }
+    else if (firstChr > 47 && firstChr < 58)
+    { //number
 
         for (int j = 1; j < s.length(); j++)
         {
@@ -64,10 +67,11 @@ bool isValidVariable(string s)  //variable
             }
         }
         return true;
-
-    } else {
-    cout << "Invalid variable in line #" << lineNumber << endl;
-    exit(0);
+    }
+    else
+    {
+        cout << "Invalid variable in line #" << lineNumber << endl;
+        exit(0);
     }
     //return false;
 }
@@ -79,12 +83,13 @@ void postfix(string expr)
     for (char ch : expr)
     {
         if (operators.find(ch) < operators.length())
-        { // ch bir operator 
+        { // ch bir operator
 
-            if(var != ""){
-            isValidVariable(var); //yeni operator geldiğine göre prev variable bitti, checks whether var is valid
-            revPostfix.push(var); //push prev var to postfix
-            var = "";
+            if (var != "")
+            {
+                isValidVariable(var); //yeni operator geldiğine göre prev variable bitti, checks whether var is valid
+                revPostfix.push(var); //push prev var to postfix
+                var = "";
             }
 
             if (oper.empty())
@@ -95,7 +100,7 @@ void postfix(string expr)
             { // stack boş değilse
 
                 if (ch == ')')
-                { 
+                {
 
                     while (oper.top() != '(')
                     {
@@ -128,23 +133,25 @@ void postfix(string expr)
             var = var + ch;
         }
     }
- 
-    if(var != ""){
-    isValidVariable(var); //operator en son gelmemiş olacağı için
-    revPostfix.push(var); //push prev var to postfix
-    var = "";
+
+    if (var != "")
+    {
+        isValidVariable(var); //operator en son gelmemiş olacağı için
+        revPostfix.push(var); //push prev var to postfix
+        var = "";
     }
 
-    if(!oper.empty()){
-    string opTop(1, oper.top());
-    revPostfix.push(opTop);
+    if (!oper.empty())
+    {
+        string opTop(1, oper.top());
+        revPostfix.push(opTop);
     }
 
-    while(!revPostfix.empty()){
+    while (!revPostfix.empty())
+    {
         postfixExp.push(revPostfix.top());
         revPostfix.pop();
     }
-
 }
 
 //string operators = "-+()/*";  yukarıda
@@ -152,25 +159,27 @@ void postfix(string expr)
 string evaluate(string expr)
 {
 
-    while(!postfixExp.empty()){  //empty stack before any expression
-    postfixExp.pop();
+    while (!postfixExp.empty())
+    { //empty stack before any expression
+        postfixExp.pop();
     }
 
-    postfix(expr);  //making new postfix expression
+    postfix(expr); //making new postfix expression
 
-    if(postfixExp.size()==1){ //if there is only a number inside just return number
-        return postfixExp.top();
+    if (postfixExp.size() == 1)
+    {                            //if there is only a number inside just return number
+        return postfixExp.top(); //->There should be something like declaereVariable ?
     }
 
-   /* while(!postfixExp.empty()){  //empty stack before any expression
+    /* while(!postfixExp.empty()){  //empty stack before any expression
     cout << postfixExp.top() + " ";
     postfixExp.pop();
     }*/
 
     stack<string> taken;
-   // int namer = 0 yukarıda
-    string namer1 =  "t" + to_string(namer++);
-    string s1 = "%"+ namer1 + " = load i32* %" + postfixExp.top();
+    // int namer = 0 yukarıda
+    string namer1 = "t" + to_string(namer++);
+    string s1 = "%" + namer1 + " = load i32* %" + postfixExp.top();
     cout << s1 << endl;
 
     taken.push(namer1);
@@ -195,19 +204,19 @@ string evaluate(string expr)
             string var2 = taken.top();
             taken.pop();
             string namer2 = "t" + to_string(namer++);
-            string s2 = "%"+ namer2 + " = load i32* %" + var1;
+            string s2 = "%" + namer2 + " = load i32* %" + var1;
             string namer3 = "t" + to_string(namer++);
             cout << s2 << endl;
             if (s_top == "+" || s_top == "-")
             {
                 if (s_top == "-")
                 {
-                    string s3 ="%"+ namer3 + " = sub i32 " + var2 + ", %" + namer2;
+                    string s3 = "%" + namer3 + " = sub i32 %" + var2 + ", %" + namer2;
                     cout << s3 << endl;
                 }
                 else
                 {
-                    string s3 = "%"+namer3 + " = add i32 " + var2 + ", %" + namer2;
+                    string s3 = "%" + namer3 + " = add i32 %" + var2 + ", %" + namer2;
                     cout << s3 << endl;
                 }
             }
@@ -215,19 +224,19 @@ string evaluate(string expr)
             {
                 if (s_top == "*")
                 {
-                    string s3 ="%"+ namer3 + " = mul i32 " + var2 + ", %" + namer2;
+                    string s3 = "%" + namer3 + " = mul i32 %" + var2 + ", %" + namer2;
                     cout << s3 << endl;
                 }
                 else
                 {
 
                     //This is going to be (?) sdiv instead of udiv check piazza
-                    string s3 ="%"+ namer3 + " = udiv i32 " + var2 + ", %" + namer2;
+                    string s3 = "%" + namer3 + " = udiv i32 %" + var2 + ", %" + namer2;
                     cout << s3 << endl;
                 }
             }
             postfixExp.pop();
-            taken.push("%"+namer3);
+            taken.push("%" + namer3);
         }
     }
     return taken.top();
