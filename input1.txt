@@ -1,3 +1,13 @@
-a = 12
-b = 23
-a = b + 4
+
+while(a){ #dasasdasdsd
+    a = 0
+    b = 2
+    c = 3
+    d = 4 #sasasas
+}
+
+b = c
+e =3
+while(e){
+    e = 0
+}
