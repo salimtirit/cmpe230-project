@@ -17,7 +17,7 @@ void assign(string i)
     if (isValidVariable(variable))
     {
         string rightPart = evaluate(otherPart); //this part is going to change we may need to call
-        cout << "store i32 " << rightPart << ", i32* %" << variable << endl;
+        cout << "store i32 %" << rightPart << ", i32* %" << variable << endl;
     }
 }
 
@@ -94,12 +94,13 @@ void mainLoop(vector<string> lines, int &lineNumber)
         exit(0);
     }
 }
+
 int main(int argc, char const *argv[])
 {
     cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "input1.txt";  //argv[1];
+    string inputFile = "input3.txt";  //argv[1];
     string outputFile = "output.txt"; //argv[2];
 
     ifstream infile;
