@@ -41,21 +41,11 @@ bool isValidNumber(string s){
 //returns true if the variable is valid
 //valid variable: first character from alphabet (upper or lowercase) preceeding with alphanumeric characters
 
-bool isValidVariable(string s)
+bool isValidVariable(string s, bool isTempVar = false)
 {
-    bool isTempVar = false;
-        if(s[0]=='t'){
-            isTempVar = true;
-            for(int i = 1; i<s.size(); i++){
-                int character = s[i];
-                if (!(character > 47 && character < 58)){
-                    isTempVar = false;
-                }
-            }
-        }
-        if(isTempVar){
-            return false;;
-        }
+    if(isTempVar){
+        return false;
+    }
 
     int firstChr = s[0];
     if ((firstChr > 96 && firstChr < 123) || (firstChr > 64 && firstChr < 90)) // all ascii table values 
@@ -168,28 +158,32 @@ string evaluate(string expr){
         if(isValidNumber(postfixExp.top())){ //checks before its a valid number
             return postfixExp.top(); //->There should be something like declaereVariable ?
         } else if(isValidVariable(postfixExp.top())){
-            return "%" + postfixExp.top();
+            string loadVar = "_t" + to_string(namer++);
+            cout << "%" + loadVar + " = load i32* %" + postfixExp.top() << endl;
+            return "%" + loadVar;
         } else {
             cout << "Invalid variable in line #" << lineNumber << endl;
             exit(0);
         }
     }
 
-    stack<string> taken; 
+    stack<pair<string,bool>> taken; 
 
     while (!postfixExp.empty())  { // stack boş olana dek
 
         string s_top = postfixExp.top();
         if (!(operators.find(s_top) < operators.length())){ //s_top operator değil ise
-            taken.push(s_top); // diğer stack'e at
+            taken.push(make_pair(s_top,false)); // diğer stack'e at
             postfixExp.pop(); //I will check validity during operations since I need to know if it is a numb or a var
 
         } else { //s_top bir operator ise
 
-            string var2 = taken.top();
+            string var2 = taken.top().first;
+            bool isTempVar2 = taken.top().second;
             taken.pop();
 
-            string var1 = taken.top();  
+            string var1 = taken.top().first; 
+            bool isTempVar1 = taken.top().second; 
             taken.pop();
 
             string operation;
@@ -206,24 +200,24 @@ string evaluate(string expr){
             string pushVar, loadVar, opVar; //variable to be pushed, temp var for loading, temp var for operation
             
             if(!isValidNumber(var1)){ //var1 is not a number
-                isValidVariable(var1); 
+                isValidVariable(var1,isTempVar1); 
 
                 pushVar = var1;
-                loadVar = "t" + to_string(namer++);
+                loadVar = "_t" + to_string(namer++);
                 cout << "%" + loadVar + " = load i32* %" + pushVar << endl;
 
             } else { //var1 is a number
-                pushVar = "t" + to_string(namer++);
+                pushVar = "_t" + to_string(namer++);
                 cout << "%" + pushVar + " = alloca i32" << endl;  //alloca new var
                 cout << "store i32 " + var1 + ", i32* %" + pushVar << endl;
         
-                loadVar = "t" + to_string(namer++);
+                loadVar = "_t" + to_string(namer++);
                 cout << "%" + loadVar + " = load i32* %" + pushVar << endl;
                
             } 
 
             if(!isValidNumber(var2)){  // var2 is variable
-                isValidVariable(var2);
+                isValidVariable(var2,isTempVar2);
                 opVar = "%t" + to_string(namer++); // % kısmı önemli
                 cout << opVar + " = load i32* %" + var2 << endl;  //load
 
@@ -232,16 +226,17 @@ string evaluate(string expr){
 
             }
 
-            string tempVar = "t" + to_string(namer++);
+            string tempVar = "_t" + to_string(namer++);
             cout << "%"+tempVar+" = " + operation + " i32 %" + loadVar + ", " + opVar << endl;
             cout <<"store i32 %"+tempVar+", i32* %"+pushVar << endl;
 
             postfixExp.pop();
-            taken.push(pushVar);
+            taken.push(make_pair(pushVar,true));
+
         }
     }
 
-    string sendVar = "t" + to_string(namer++);
-    cout << "%" + sendVar + " = load i32* %" + taken.top() << endl;
+    string sendVar = "_t" + to_string(namer++);
+    cout << "%" + sendVar + " = load i32* %" + taken.top().first << endl;
     return "%" + sendVar;
 }
