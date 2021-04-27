@@ -68,4 +68,4 @@ Should we change to postfix notation using a stack or the one which proffesor me
 en son basmak için cout ları assign ve diğerleri diye ayır
 önce assignı bas sonra diğerlerini
 
-parantez kapatma olayını düşün
+line numberlar 0 dan mı 1 den mi başlamalı

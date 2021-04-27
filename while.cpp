@@ -17,11 +17,11 @@ void assign(string i)
     if (isValidVariable(variable))
     {
         string rightPart = evaluate(otherPart); //this part is going to change we may need to call
-        cout << "store i32 %" << rightPart << ", i32* %" << variable << endl;
+        cout << "store i32 " << rightPart << ", i32* %" << variable << endl;
     }
 }
 
-void mainLoop(vector<string> lines, int &lineNumber)
+void mainLoop(vector<string> lines, int &lineNumber, int nOfLoops)
 {
     string i = lines[lineNumber];
     i.erase(remove(i.begin(), i.end(), '\t'), i.end()); // removes all tab characters
@@ -38,6 +38,10 @@ void mainLoop(vector<string> lines, int &lineNumber)
     }
     else if (i.find("while(") == 0)
     {
+        if(nOfLoops){
+            cout << "Syntax error in line #" << lineNumber << endl;
+            exit(0);
+        }
         int openPosition = i.find("(");
         int closePosition = i.find(")");
         if (i.substr(0, openPosition) != "while" || i.substr(closePosition + 1, i.length()) != "{")
@@ -71,7 +75,12 @@ void mainLoop(vector<string> lines, int &lineNumber)
         while (!(i.find("}") < i.size()))
         {
             lineNumber++;
-            mainLoop(lines, lineNumber);
+            if(lineNumber < lines.size()){
+                mainLoop(lines, lineNumber, nOfLoops++);
+            }else {
+                cout << "No curly bracets in line #"<< lines.size() << endl; // last line number
+                exit(0);
+            }
             i = lines[lineNumber];
         }
         cout << "br label %" + whileConditionName << endl;
@@ -79,9 +88,11 @@ void mainLoop(vector<string> lines, int &lineNumber)
     }
     else if (i.find("if("))
     {
+        // dont forget to increase the number of loops
     }
     else if (i.find("print("))
     {
+        //there may be a choose function inside
         //print the given variables
     }
     else if (i == "")
@@ -100,7 +111,7 @@ int main(int argc, char const *argv[])
     cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "input3.txt";  //argv[1];
+    string inputFile = "input1.txt";  //argv[1];
     string outputFile = "output.txt"; //argv[2];
 
     ifstream infile;
@@ -118,9 +129,9 @@ int main(int argc, char const *argv[])
     }
 
     //main for loop
-    for (int lineNumber = 0; lineNumber < lines.size(); lineNumber++)
+    for (; lineNumber < lines.size(); lineNumber++)
     {
-        mainLoop(lines, lineNumber);
+        mainLoop(lines, lineNumber, 0);
     }
 
     cout << "ret i32 0" << endl; //return 0

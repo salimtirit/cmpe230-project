@@ -167,7 +167,9 @@ string evaluate(string expr){
     if (postfixExp.size() == 1){   //if there is only a number inside just return number
         if(isValidNumber(postfixExp.top())){ //checks before its a valid number
             return postfixExp.top(); //->There should be something like declaereVariable ?
-        }else {
+        } else if(isValidVariable(postfixExp.top())){
+            return "%" + postfixExp.top();
+        } else {
             cout << "Invalid variable in line #" << lineNumber << endl;
             exit(0);
         }
@@ -241,5 +243,5 @@ string evaluate(string expr){
 
     string sendVar = "t" + to_string(namer++);
     cout << "%" + sendVar + " = load i32* %" + taken.top() << endl;
-    return sendVar;
+    return "%" + sendVar;
 }

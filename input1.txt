@@ -1,12 +1,11 @@
-
 while(a){ #dasasdasdsd
     a = 0
     b = 2
+    b = a
     c = 3
     d = 4 #sasasas
 }
 
-b = c
 e =3
 while(e){
     e = 0
