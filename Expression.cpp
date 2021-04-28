@@ -68,47 +68,97 @@ bool isValidVariable(string s, bool isTempVar = false)
     }
 }
 
-void postfix(string expr)
-{
+void choose(string var){
+
+    string expr1 = var.substr(0, var.find(","));  //main expr
+    var=var.substr(var.find(",")+1);
+    string expr2 = var.substr(0, var.find(",")); //if main=0
+    var=var.substr(var.find(",")+1);
+    string expr3 = var.substr(0, var.find(",")); //if main>0
+    var=var.substr(var.find(",")+1);
+    string expr4 = var; //if main<0
+
+    string _valExpr1 = "_t" + to_string(namer++);
+    //_valExpr1 i bir variable olarak define edeceğim çünkü temp var olması biraz zor olabilir?
+    //_valExpr1 = evaluate(expr1);
+    //for(i=0; i<3 ; i++){
+    // llvm için ardışık 3 if kodu?
+    //}
+}
+
+void postfix(string expr){
     stack<string> revPostfix;
     string var = "";
-    for (char ch : expr)
-    {
-        if (operators.find(ch) < operators.length())
-        { // ch bir operator
+    bool takingChoose = false; 
+    string prevOper = "";
+    for (char ch : expr) {
 
-            if (var != "")
-            {
+        if(takingChoose){
+            
+            if(ch != ')'){ //kalan ifadeyi almayı deniyorum
+                if (ch == expr.back()) // ')' was expected, reached the end however
+                {
+                    cout << "error in line: " << lineNumber << endl;
+                    exit(0);
+                }
+                var = var + ch;
+            } else {
+            choose(var); // this function handles with other things
+            var = "";
+            takingChoose = false;
+            }
+
+        } else if (operators.find(ch) < operators.length()) { // ch bir operator
+
+            if(ch == expr.back() && ch != ')' ){  // The last character of the string can not be an operator except ")", a variable is expected
+                cout << "syntax error in line: " << lineNumber << endl;
+                exit(0);  
+            }
+
+            if(prevOper != ""){  // only +( and )+ is valid, others are invalid
+                if(prevOper != ")" && ch != '('){
+                cout << "syntax error in line: " << lineNumber << endl;
+                exit(0);  
+                }
+            }
+            prevOper = ch + "";
+
+            if(ch == '('){
+                if(var=="choose"){
+                    var="";
+                    takingChoose = true;
+                    continue; //does this work?
+                }
+            }
+
+            if (var != "") {
                 revPostfix.push(var); //push prev var to postfix
                 var = "";
             }
 
-            if (oper.empty())
-            {                  // stack boş ise
-                oper.push(ch); // ch yi direkt stack e koy
-            }
-            else
-            { // stack boş değilse
-
-                if (ch == ')')
-                {
-
+            if (oper.empty()) {    // if operator stack is empty
+                if(ch == ')'){
+                    cout << "'(' is expected, error in line: " << lineNumber << endl;
+                    exit(0); 
+                }
+                oper.push(ch); // directly put ch to stack
+            } else { // stack boş değilse
+                if (ch == ')') {
                     while (oper.top() != '(')
                     {
-
                         string opTop(1, oper.top());
                         revPostfix.push(opTop);
                         oper.pop();
-                    }
-
+                    
+                        if(oper.empty()){
+                        cout << "'(' is expected, error in line: " << lineNumber << endl;
+                        exit(0); 
+                        }
+                    }                    
                     oper.pop();
-                }
-                else
-                {
-                    while (!oper.empty() && ch != '(' && oper.top() != '(')
-                    {
-                        if (smaller.find(oper.top()) < 2 && bigger.find(ch) < 2)
-                        {
+                } else {
+                    while (!oper.empty() && ch != '(' && oper.top() != '('){ //precedence
+                        if (smaller.find(oper.top()) < 2 && bigger.find(ch) < 2){
                             break;
                         }
                         string opTop(1, oper.top());
@@ -118,23 +168,23 @@ void postfix(string expr)
                     oper.push(ch);
                 }
             }
-        }
-        else
-        { //ch bir variable
+
+        } else { //ch is a variable
             var = var + ch;
+            prevOper = "";
         }
     }
 
-    if (var != "")
-    {
+    if (var != "") {
         revPostfix.push(var); //push prev var to postfix
         var = "";
     }
 
-    if (!oper.empty())
-    {
+    while(!oper.empty()){
+        
         string opTop(1, oper.top());
         revPostfix.push(opTop);
+        oper.pop();
     }
 
     while (!revPostfix.empty())
