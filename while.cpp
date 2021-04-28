@@ -108,10 +108,23 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         }
         cout << endName << ":" << endl;
     }
-    else if (i.find("print("))
+    else if (i.find("print(") < i.size())
     {
-        //there may be a choose function inside
-        //print the given variables
+        int openPosition = i.find("(");
+        int closePosition = i.find(")"); 
+        if(i.substr(0,openPosition)!="print" || i.substr(closePosition+1)!=""){
+            cout << "syntax error in line: "<<lineNumber <<endl;
+            exit(0);
+        }
+        string printVar = i.substr(openPosition + 1, closePosition - openPosition - 1);
+        if(!isValidNumber(printVar)){
+            if(isValidVariable(printVar)){  
+                string tempName = "%_t" + to_string(namer++);
+                cout << tempName + " = load i32* %"+printVar << endl;
+                printVar = tempName;
+            }     
+        }
+        cout << "call i32 (i8*, ...)* @printf(i8* getelementptr ([4 x i8]* @print.str, i32 0, i32 0), i32 " +printVar+" )" << endl;
         
     }
     else if (i == "")
@@ -130,7 +143,7 @@ int main(int argc, char const *argv[])
     cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "input2.txt";  //argv[1];
+    string inputFile = "input.txt";  //argv[1];
     string outputFile = "output.txt"; //argv[2];
 
     ifstream infile;
