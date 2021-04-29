@@ -72,10 +72,10 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         cout << conditionName << ":" << endl;
         string condition = i.substr(openPosition + 1, closePosition - openPosition - 1);
 
-        isValidVariable(condition);
+        string tempCond = evaluate(condition);
 
         string namerCondition1 = "t" + to_string(namer++);
-        string s1 = "%" + namerCondition1 + " = load i32* %" + condition;
+        string s1 = "%" + namerCondition1 + " = load i32* " + tempCond;
         cout << s1 << endl;
 
         string namerCondition2 = "t" + to_string(namer++);
@@ -143,8 +143,8 @@ int main(int argc, char const *argv[])
     cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "./inputs/input.txt";  //argv[1];
-    string outputFile = "./outputs/output.txt"; //argv[2];
+    string inputFile = "input3.txt";  //argv[1];
+    string outputFile = "output.txt"; //argv[2];
 
     ifstream infile;
     infile.open(inputFile);
