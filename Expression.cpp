@@ -14,6 +14,7 @@ stack<string> postfixExp;
 stack<string> expression;
 stack<char> oper;
 int namer = 0;
+int chooseNamer = 0;
 string evaluate(string expr);
 
 void declareVariable(string name, int value = 0)
@@ -71,17 +72,72 @@ bool isValidVariable(string s, bool isTempVar = false)
 
 string choose(string var){
     var = var.substr(var.find("("));
- cout << var << endl; //buralarda string doğru mu bakmak lazım
-    string expr1 = var.substr(0, var.find(","));  //main expr
+    //cout << var << endl; //buralarda string doğru mu bakmak lazım
+    string expr1 = var.substr(1, var.find(",")-1);  //main expr
+    if(expr1.find("choose(") < expr1.length()){
+        expr1 = choose(expr1); //burda tam oalrak ne dönecek kafam karıştı biraz
+        // tempvar dönmesi gerekiyor diye düşünüyorum ama bunu isvalid var ile
+        // kontrol edebiliyor muyuz?
+    }
+    isValidVariable(expr1); //??????????
     var=var.substr(var.find(",")+1);
     string expr2 = var.substr(0, var.find(",")); //if main=0
+    
     var=var.substr(var.find(",")+1);
     string expr3 = var.substr(0, var.find(",")); //if main>0
-    var=var.substr(var.find(",")+1);
+    
+    var=var.substr(var.find(",")+1, var.length()-var.find(",")-2);
     string expr4 = var; //if main<0
 
-    string _valExpr1 = evaluate(expr1);
-    exit(0);
+    string condName = "choose" + to_string(chooseNamer) + "cond";
+    string body0 = "choose" + to_string(chooseNamer) + "body0";
+    string body1 = "choose" + to_string(chooseNamer) + "body1";
+    string body1_1 = "choose" + to_string(chooseNamer) + "body1.1";
+    string body1_2 = "choose" + to_string(chooseNamer) + "body1.2";
+    string choseEnd = "choose" + to_string(chooseNamer) + "end";
+    chooseNamer++;
+
+    cout << "br label %" << condName << endl;
+    cout << condName << ":" << endl;
+    string firstEq = "%_t" + to_string(namer++);
+    cout << firstEq <<"= load %32* %" << expr1 << endl;
+    string secondEq = "%_t" + to_string(namer++);
+    cout << secondEq << " icmp eq i32 " << firstEq << ", 0" << endl;
+    cout << "br i1 " << secondEq << ", label %" << body0 << ", label %"<< body1 << endl; 
+    
+    string thirdEq = "%_t" + to_string(namer++);
+    cout << body0 << ":" << endl;
+    if(expr2.find("choose(")< expr2.length()){
+        expr2 = choose(expr2);
+    }
+    cout << "%_t" << to_string(namer+1) << "= load %" << expr2;
+    cout << "br label" << choseEnd << endl;
+
+    cout << body1 << ":" << endl;
+    
+    cout << thirdEq << "icmp sgt i32 %" << expr1 << ", 0" << endl; // may not be third?
+    cout << "br i1 " << thirdEq << ", label %"  << body1_1  << ", label %" << body1_2 << endl;
+
+    cout << body1_1 << ":" << endl;
+    if(expr3.find("choose(")< expr3.length()){
+        expr3 = choose(expr3);
+    }
+    string fourthEq = "%_t" + to_string(namer++);
+    cout << fourthEq << "= load %" << expr3;
+    cout << "br label" << choseEnd << endl;
+
+    cout << body1_2 << ":" << endl;
+    if(expr4.find("choose(")< expr4.length()){
+        expr4 = choose(expr4);
+    }
+    cout << fourthEq << "= load %" << expr4;
+    cout << "br label" << choseEnd << endl;
+
+    cout << choseEnd << ":" << endl;
+
+
+    //string _valExpr1 = evaluate(expr1);
+    //exit(0);
     //_valExpr1 i bir variable olarak define edeceğim çünkü temp var olması biraz zor olabilir?
     //_valExpr1 = evaluate(expr1);
     //for(i=0; i<3 ; i++){
