@@ -15,6 +15,7 @@ stack<string> expression;
 stack<char> oper;
 int namer = 0;
 int chooseNamer = 0;
+int condNamer = 0;
 string evaluate(string expr);
 
 string varNamer(){
@@ -78,6 +79,34 @@ bool isValidVariable(string s, bool isTempVar = false)
     }
 }
 
+void chooseCondPrint(string expr, string oper, string condVar, string returnVar){
+
+    string condName = "choose" + to_string(chooseNamer) + "cond" + to_string(condNamer++); //choose0cond0
+    string body = "choose" + to_string(chooseNamer) + "body" + to_string(condNamer); //choose0body0
+    string chooseEnd = "choose" + to_string(chooseNamer) + "end" + to_string(condNamer); //choose0end0
+
+    cout << "br label %" << condName << endl; 
+    cout << condName << ":" << endl; 
+
+    string boolVar = varNamer();
+    cout << "%"+ boolVar << " = icmp " + oper + " i32 " << condVar << ", 0" << endl; //bool variable is above, not changing
+    cout << "br i1 %" << boolVar << ", label %" << body << ", label %"<< chooseEnd << endl; 
+
+    cout << body << ":" << endl;
+ 
+    if(isValidNumber(expr)){
+         cout << "store i32 "+ expr +", i32* %" + returnVar << endl;  
+    } else { //expr2 will be given as a temp var, I want to give its value to another temp var which is returnVar
+        cout << "store i32 "+ evaluate(expr) +", i32* %" + returnVar << endl;
+    }
+
+    cout << "br label %"+chooseEnd << endl;
+    cout << chooseEnd +":" << endl;
+
+}
+
+
+
 string choose(string var){
 
     var = var.substr(var.find("(")+1);  // deleting first "choose(" and ")" part
@@ -90,7 +119,7 @@ string choose(string var){
             var=var.substr(var.find(",")+1);
             exprs.push_back(expr);
         }else {
-            cout << "error in line: "<< lineNumber <<endl;
+            cout << "1error in line: "<< lineNumber <<endl;
             exit(0);
         }
     }
@@ -102,75 +131,33 @@ string choose(string var){
     exprs.pop_back();   
     string expr1 = exprs.back();
     exprs.pop_back();
-    
-    string condName = "choose" + to_string(chooseNamer) + "cond";
-    string body0 = "choose" + to_string(chooseNamer) + "body0";
-    string body1 = "choose" + to_string(chooseNamer) + "body1";
-    string body1_1 = "choose" + to_string(chooseNamer) + "body1.1";
-    string body1_2 = "choose" + to_string(chooseNamer) + "body1.2";
-    string choseEnd = "choose" + to_string(chooseNamer) + "end";
-    chooseNamer++;
-    string returnVar = varNamer();
-
-    //string temp_expr1 = evaluate(expr1);  //possibility of return val is a number
-    //expr1 = varNamer();
-    //cout << "%" + expr1 + " = alloca i32" << endl;
-    //cout << "store i32 " + temp_expr1 + ", i32* %" + expr1 << endl;  // temp_expr1 can return a number so I did this
-
-    cout << "br label %" << condName << endl; //br label %choose0cond
-    cout << condName << ":" << endl; //choose0cond:
+    string condVar;
 
     if(isValidNumber(expr1)){
-        string tempVar = varNamer();
-        cout << "%"+tempVar + " = alloca i32"<<endl;  //making a new variable that stores the num
-        cout << "store i32 "+ expr1 +", i32* %" + tempVar << endl;
-        string firstEq = "%" + varNamer(); 
-        cout << firstEq << " = load i32* %" << tempVar << endl;  //load condition to a variable
-        expr1 = firstEq;
+        string tempRealVar = "%"+varNamer();
+        cout << tempRealVar + " = alloca i32"<<endl;
+        cout << "store i32 "+expr1+", i32* "+tempRealVar<<endl;
+        condVar = "%" + varNamer();
+        cout << condVar << " = load i32* " << tempRealVar << endl;  
     } else {
-        expr1 = evaluate(expr1);
+        condVar = evaluate(expr1); //It returns a tempVar
     }
-    string secondEq ="%" + varNamer();
-    cout << secondEq << " = icmp eq i32 " << expr1 << ", 0" << endl; //compare with 0
-    cout << "br i1 " << secondEq << ", label %" << body0 << ", label %"<< body1 << endl; 
     
-    cout << body0 << ":" << endl;
-    string tempVar2 = varNamer();
-    cout << "%"+tempVar2 + " = alloca i32"<<endl;  //making a new variable that stores the num
-     if(!(isValidNumber(expr2))){
-         expr2 = evaluate(expr2);
-    }
-    cout << "store i32 "+ expr2 +", i32* %" + tempVar2 << endl;
-    cout << "%"+ returnVar << " = load %" << tempVar2 << endl;
-    cout << "br label " << choseEnd << endl;
+    string returnVar = varNamer();
+    cout << "%" + returnVar + " = alloca i32"<<endl;
+    cout << "store i32 "+to_string(0)+", i32* %"+returnVar<<endl;
 
-    cout << body1 << ":" << endl;
-    string thirdEq = "%_t" + to_string(namer++);
-    cout << thirdEq << " = icmp sgt i32 " << expr1 << ", 0" << endl; // may not be third?
-    cout << "br i1 " << thirdEq << ", label %"  << body1_1  << ", label %" << body1_2 << endl;
+    chooseCondPrint(expr2, "eq", condVar, returnVar);
+    chooseCondPrint(expr3, "sgt", condVar, returnVar);
+    chooseCondPrint(expr4, "slt", condVar, returnVar);
 
-    cout << body1_1 << ":" << endl;
-    string tempVar3 = varNamer();
-    cout << "%"+tempVar3 + " = alloca i32"<<endl;  //making a new variable that stores the num
-     if(!(isValidNumber(expr3))){
-         expr3 = evaluate(expr3);
-    }
-    cout << "store i32 "+ expr3 +", i32* %" + tempVar3 << endl;
-    cout << "%"+ returnVar << " = load %" << tempVar3 << endl;
-    cout << "br label " << choseEnd << endl;
+    chooseNamer++; //update
+    condNamer = 0;
 
-    cout << body1_2 << ":" << endl;
-    string tempVar4 = varNamer();
-    cout << "%"+tempVar4 + " = alloca i32"<<endl;  //making a new variable that stores the num
-    if(!(isValidNumber(expr4))){
-         expr4 = evaluate(expr4);
-    }
-    cout << "store i32 "+ expr4 +", i32* %" + tempVar4 << endl;
-    cout << "%"+ returnVar << " = load %" << tempVar4 << endl;
-    cout << "br label " << choseEnd << endl;
-    cout << choseEnd << ":" << endl;
+    string tempReturnVar = varNamer();
+    cout << "%" + tempReturnVar + " = load i32* %" + returnVar<<endl;
 
-    return returnVar;
+    return "%"+tempReturnVar;
 }
 
 void postfix(string expr){
@@ -186,7 +173,7 @@ void postfix(string expr){
         if(takingChoose){
             
             if(ch != ')'){ //kalan ifadeyi almayı deniyorum
-                if (ch == expr.back()) // ')' was expected, reached the end however
+                if (ch == expr.back() && expr.find(ch)==(expr.size()-1) ) // ')' was expected, reached the end however
                 {
                     cout << "error in line: " << lineNumber << endl;
                     exit(0);
