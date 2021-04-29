@@ -17,6 +17,10 @@ int namer = 0;
 int chooseNamer = 0;
 string evaluate(string expr);
 
+string varNamer(){
+    return "_t" + to_string(namer++);
+}
+
 void declareVariable(string name, int value = 0)
 {
     if (variables.find(name) == variables.end())
@@ -45,9 +49,9 @@ bool isValidNumber(string s){
 
 bool isValidVariable(string s, bool isTempVar = false)
 {
-    if(variables.find(s) == variables.end()){
-        return true;
-    }
+ //   if(variables.find(s) == variables.end() && (variables.size()>1)){
+   //     return true;
+    //}
 
     if(isTempVar){
         return false;
@@ -75,6 +79,7 @@ bool isValidVariable(string s, bool isTempVar = false)
 }
 
 string choose(string var){
+
     var = var.substr(var.find("(")+1);  // deleting first "choose(" and ")" part
     var = var.substr(0, var.size()-1);
     vector<string> exprs;
@@ -105,57 +110,67 @@ string choose(string var){
     string body1_2 = "choose" + to_string(chooseNamer) + "body1.2";
     string choseEnd = "choose" + to_string(chooseNamer) + "end";
     chooseNamer++;
+    string returnVar = varNamer();
 
-    expr1 = evaluate(expr1);  //until no choose left
-    
-    cout << "br label %" << condName << endl;
-    cout << condName << ":" << endl;
-    string firstEq = "%_t" + to_string(namer++);
-    cout << firstEq <<"= load %32* %" << expr1 << endl;
-    string secondEq = "%_t" + to_string(namer++);
-    cout << secondEq << " icmp eq i32 " << firstEq << ", 0" << endl;
+    //string temp_expr1 = evaluate(expr1);  //possibility of return val is a number
+    //expr1 = varNamer();
+    //cout << "%" + expr1 + " = alloca i32" << endl;
+    //cout << "store i32 " + temp_expr1 + ", i32* %" + expr1 << endl;  // temp_expr1 can return a number so I did this
+
+    cout << "br label %" << condName << endl; //br label %choose0cond
+    cout << condName << ":" << endl; //choose0cond:
+
+    if(isValidNumber(expr1)){
+        string tempVar = varNamer();
+        cout << "%"+tempVar + " = alloca i32"<<endl;  //making a new variable that stores the num
+        cout << "store i32 "+ expr1 +", i32* %" + tempVar << endl;
+        string firstEq = "%" + varNamer(); 
+        cout << firstEq << " = load i32* %" << tempVar << endl;  //load condition to a variable
+        expr1 = firstEq;
+    } else {
+        expr1 = evaluate(expr1);
+    }
+    string secondEq ="%" + varNamer();
+    cout << secondEq << " = icmp eq i32 " << expr1 << ", 0" << endl; //compare with 0
     cout << "br i1 " << secondEq << ", label %" << body0 << ", label %"<< body1 << endl; 
     
-    string thirdEq = "%_t" + to_string(namer++);
     cout << body0 << ":" << endl;
-    if(expr2.find("choose(")< expr2.length()){
-        expr2 = choose(expr2);
+    string tempVar2 = varNamer();
+    cout << "%"+tempVar2 + " = alloca i32"<<endl;  //making a new variable that stores the num
+     if(!(isValidNumber(expr2))){
+         expr2 = evaluate(expr2);
     }
-    cout << "%_t" << to_string(namer+1) << "= load %" << expr2;
-    cout << "br label" << choseEnd << endl;
+    cout << "store i32 "+ expr2 +", i32* %" + tempVar2 << endl;
+    cout << "%"+ returnVar << " = load %" << tempVar2 << endl;
+    cout << "br label " << choseEnd << endl;
 
     cout << body1 << ":" << endl;
-    
-    cout << thirdEq << "icmp sgt i32 %" << expr1 << ", 0" << endl; // may not be third?
+    string thirdEq = "%_t" + to_string(namer++);
+    cout << thirdEq << " = icmp sgt i32 " << expr1 << ", 0" << endl; // may not be third?
     cout << "br i1 " << thirdEq << ", label %"  << body1_1  << ", label %" << body1_2 << endl;
 
     cout << body1_1 << ":" << endl;
-    if(expr3.find("choose(")< expr3.length()){
-        expr3 = choose(expr3);
+    string tempVar3 = varNamer();
+    cout << "%"+tempVar3 + " = alloca i32"<<endl;  //making a new variable that stores the num
+     if(!(isValidNumber(expr3))){
+         expr3 = evaluate(expr3);
     }
-    string fourthEq = "%_t" + to_string(namer++);
-    cout << fourthEq << "= load %" << expr3;
-    cout << "br label" << choseEnd << endl;
+    cout << "store i32 "+ expr3 +", i32* %" + tempVar3 << endl;
+    cout << "%"+ returnVar << " = load %" << tempVar3 << endl;
+    cout << "br label " << choseEnd << endl;
 
     cout << body1_2 << ":" << endl;
-    if(expr4.find("choose(")< expr4.length()){
-        expr4 = choose(expr4);
+    string tempVar4 = varNamer();
+    cout << "%"+tempVar4 + " = alloca i32"<<endl;  //making a new variable that stores the num
+    if(!(isValidNumber(expr4))){
+         expr4 = evaluate(expr4);
     }
-    cout << fourthEq << "= load %" << expr4;
-    cout << "br label" << choseEnd << endl;
-
+    cout << "store i32 "+ expr4 +", i32* %" + tempVar4 << endl;
+    cout << "%"+ returnVar << " = load %" << tempVar4 << endl;
+    cout << "br label " << choseEnd << endl;
     cout << choseEnd << ":" << endl;
 
-
-    //string _valExpr1 = evaluate(expr1);
-    //exit(0);
-    //_valExpr1 i bir variable olarak define edeceğim çünkü temp var olması biraz zor olabilir?
-    //_valExpr1 = evaluate(expr1);
-    //for(i=0; i<3 ; i++){
-    // llvm için ardışık 3 if kodu?
-    //}
-
-    return "";
+    return returnVar;
 }
 
 void postfix(string expr){
@@ -308,22 +323,25 @@ string evaluate(string expr){
     }
 
     postfix(expr); //making new postfix expression
-    string singleVar;
     if (postfixExp.size() == 1){   //if there is only a number inside just return number
 
         if(isValidNumber(postfixExp.top())){ //checks before its a valid number
             return postfixExp.top(); //->There should be something like declaereVariable ?
         } else {
+             string singleVar;
+             string loadVar;
             if(postfixExp.top().find("choose")<postfixExp.top().size()){
-                singleVar = choose(postfixExp.top());
+                return choose(postfixExp.top());
+              //  loadVar = "_t" + to_string(namer++);
             } else if(isValidVariable(postfixExp.top())){
                 singleVar = "_t" + to_string(namer++);
+                loadVar = postfixExp.top();
+                cout << "%" + singleVar + " = load i32* %" + loadVar << endl;
+                return "%" + singleVar;
             } else {
                 cout << "Invalid variable in line #" << lineNumber << endl;
                 exit(0);
             }
-            cout << "%" + singleVar + " = load i32* %" + postfixExp.top() << endl;
-            return "%" + singleVar;
         }
     }
 
