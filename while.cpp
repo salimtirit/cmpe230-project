@@ -72,10 +72,10 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         cout << conditionName << ":" << endl;
         string condition = i.substr(openPosition + 1, closePosition - openPosition - 1);
 
-        isValidVariable(condition);
+        istring tempCond = evaluate(condition);
 
         string namerCondition1 = "t" + to_string(namer++);
-        string s1 = "%" + namerCondition1 + " = load i32* %" + condition;
+        string s1 = "%" + namerCondition1 + " = load i32* " + tempCond;
         cout << s1 << endl;
 
         string namerCondition2 = "t" + to_string(namer++);

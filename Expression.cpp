@@ -45,6 +45,10 @@ bool isValidNumber(string s){
 
 bool isValidVariable(string s, bool isTempVar = false)
 {
+    if(variables.find(s) == variables.end()){
+        return true;
+    }
+
     if(isTempVar){
         return false;
     }
@@ -71,24 +75,29 @@ bool isValidVariable(string s, bool isTempVar = false)
 }
 
 string choose(string var){
-    var = var.substr(var.find("("));
-    //cout << var << endl; //buralarda string doğru mu bakmak lazım
-    string expr1 = var.substr(1, var.find(",")-1);  //main expr
-    if(expr1.find("choose(") < expr1.length()){
-        expr1 = choose(expr1); //burda tam oalrak ne dönecek kafam karıştı biraz
-        // tempvar dönmesi gerekiyor diye düşünüyorum ama bunu isvalid var ile
-        // kontrol edebiliyor muyuz?
-    }
-    isValidVariable(expr1); //??????????
-    var=var.substr(var.find(",")+1);
-    string expr2 = var.substr(0, var.find(",")); //if main=0
-    
-    var=var.substr(var.find(",")+1);
-    string expr3 = var.substr(0, var.find(",")); //if main>0
-    
-    var=var.substr(var.find(",")+1, var.length()-var.find(",")-2);
-    string expr4 = var; //if main<0
+    var = var.substr(var.find("(")+1);  // deleting first "choose(" and ")" part
+    var = var.substr(0, var.size()-1);
+    vector<string> exprs;
+    for ( int i = 0; i < 3; i++) {
 
+        if(var.find(",")<var.size()){
+            string expr = var.substr(0, var.find(",")); 
+            var=var.substr(var.find(",")+1);
+            exprs.push_back(expr);
+        }else {
+            cout << "error in line: "<< lineNumber <<endl;
+            exit(0);
+        }
+    }
+
+    string expr4 = var;
+    string expr3 = exprs.back();
+    exprs.pop_back();
+    string expr2 = exprs.back();
+    exprs.pop_back();   
+    string expr1 = exprs.back();
+    exprs.pop_back();
+    
     string condName = "choose" + to_string(chooseNamer) + "cond";
     string body0 = "choose" + to_string(chooseNamer) + "body0";
     string body1 = "choose" + to_string(chooseNamer) + "body1";
@@ -97,6 +106,8 @@ string choose(string var){
     string choseEnd = "choose" + to_string(chooseNamer) + "end";
     chooseNamer++;
 
+    expr1 = evaluate(expr1);  //until no choose left
+    
     cout << "br label %" << condName << endl;
     cout << condName << ":" << endl;
     string firstEq = "%_t" + to_string(namer++);
