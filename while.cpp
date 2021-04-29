@@ -71,15 +71,20 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         cout << "br label %" + conditionName << endl;
         cout << conditionName << ":" << endl;
         string condition = i.substr(openPosition + 1, closePosition - openPosition - 1);
+        
+        string namerCondition1;
+        if(isValidNumber(condition)){
+            string tempVar = varNamer();
+            cout << "%"+tempVar + " = alloca i32"<<endl;
+            cout << "store i32 "+condition+", i32* %"+tempVar << endl;
+           namerCondition1 ="%"+ varNamer();
+           cout << namerCondition1 + " = load i32* %" + tempVar<<endl;
+        } else {
+            namerCondition1 = evaluate(condition);
+        }
 
-        istring tempCond = evaluate(condition);
-
-        string namerCondition1 = "t" + to_string(namer++);
-        string s1 = "%" + namerCondition1 + " = load i32* " + tempCond;
-        cout << s1 << endl;
-
-        string namerCondition2 = "t" + to_string(namer++);
-        string s2 = "%" + namerCondition2 + " = icmp ne i32 %" + namerCondition1 + ", 0";
+        string namerCondition2 = varNamer();
+        string s2 = "%" + namerCondition2 + " = icmp ne i32 " + namerCondition1 + ", 0";
         cout << s2 << endl;
 
         string s3 = "br i1 %" + namerCondition2 + ", label %" + bodyName + ", label %" + endName;
@@ -143,8 +148,8 @@ int main(int argc, char const *argv[])
     cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "./inputs/input.txt";  //argv[1];
-    string outputFile = "./outputs/output.txt"; //argv[2];
+    string inputFile =  "input3.txt" ;   // "D:\\VisualWorkspace\\cmpe230-project-main\\inputs\\testcase2.my";  //argv[1];
+    string outputFile = "output.txt"; //argv[2];
 
     ifstream infile;
     infile.open(inputFile);
