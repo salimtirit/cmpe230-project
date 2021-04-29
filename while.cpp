@@ -87,11 +87,12 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
 
         cout << bodyName << ":" << endl;
 
+        lineNumber++;
         while (!(i.find("}") < i.size()))
         {
-            lineNumber++;
             if(lineNumber < lines.size()){
                 mainLoop(lines, lineNumber, nOfLoops);
+                lineNumber++;
             }else {
                 cout << "No curly bracets in line #"<< lines.size() << endl; // last line number
                 exit(0);
@@ -127,18 +128,23 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
     }
     else
     {
-        cout << "Syntax Error in line #" << lineNumber << endl;
+        cout << "Syntax Error in line # here" << lineNumber << endl;
         exit(0);
     }
 }
 
 int main(int argc, char const *argv[])
 {
+   cout << "; ModuleID = 'mylang2ir'" << endl;
+   cout << "declare i32 @printf(i8*, ...)" << endl;
+   cout << "@print.str = constant [4 x i8] c\"%d\\0A\\00\"" << endl;
+
+
     cout << "define i32 @main() {" << endl; // main starts
     vector<string> tokens;
 
-    string inputFile = "input3.txt";  //argv[1];
-    string outputFile = "output.txt"; //argv[2];
+    string inputFile = "./inputs/input.txt";  //argv[1];
+    string outputFile = "./outputs/output.txt"; //argv[2];
 
     ifstream infile;
     infile.open(inputFile);
