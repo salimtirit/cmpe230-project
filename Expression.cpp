@@ -12,7 +12,7 @@ vector<string> otherStatements;
 string operators = "-+()/*";
 string bigger = "*/";
 string smaller = "-+";
-stack<string> postfixExp;
+
 stack<string> expression;
 stack<char> oper;
 int namer = 0;
@@ -171,7 +171,7 @@ string choose(string var){
     return "%"+tempReturnVar;
 }
 
-void postfix(string expr){
+stack<string> postfix(string expr,stack<string> postfixExp){
     stack<string> revPostfix;
     string var = "";
     bool takingChoose = false; 
@@ -313,15 +313,13 @@ void postfix(string expr){
         cout << revPostfix.top() << endl;
         revPostfix.pop();
     }
+    return postfixExp;
 }
 
 string evaluate(string expr){
+    stack<string> postfixExp;
 
-    while (!postfixExp.empty()){ //empty stack before any expression
-        postfixExp.pop();
-    }
-
-    postfix(expr); //making new postfix expression
+    postfixExp = postfix(expr,postfixExp); //making new postfix expression
     if (postfixExp.size() == 1){   //if there is only a number inside just return number
 
         if(isValidNumber(postfixExp.top())){ //checks before its a valid number
@@ -399,8 +397,9 @@ string evaluate(string expr){
                      operand1 = var1;
                  }
             } else {
-                operand1 = var1;
-                var1IsNumb = true;
+                otherStatements.push_back("store i32 "+ var1 +", i32* %" + returnVar);
+                operand1 = "%"+varNamer();
+                otherStatements.push_back( operand1 + " = load i32* %" + returnVar);
             }
 
             if(!isValidNumber(var2)){
@@ -412,20 +411,7 @@ string evaluate(string expr){
                      operand2 = var2;
                 }
             } else {
-                if(var1IsNumb){
-                    otherStatements.push_back("store i32 "+ var2 +", i32* %" + returnVar);
-                    operand2 = "%"+varNamer();
-                    otherStatements.push_back( operand2 + " = load i32* %" + returnVar);
-                } else {
-                 operand2 = var2;
-                }
-            }
-
-            if(var1IsNumb){
-               string tempOperand = operand1;
-               operand1 = operand2;
-               operand2 = tempOperand;
-               var1IsNumb = false;
+                operand2 = var2;
             }
       
             string pushVar = "%" + varNamer();
