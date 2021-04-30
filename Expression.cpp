@@ -9,7 +9,6 @@ map<string, int> variables; //name may ned to be changed due to conflicts
 vector<string> declareStatements;
 vector<string> otherStatements;
 
-
 string operators = "-+()/*";
 string bigger = "*/";
 string smaller = "-+";
@@ -21,6 +20,7 @@ int chooseNamer = 0;
 int condNamer = 0;
 string evaluate(string expr);
 void errorHandling(int line);
+
 string varNamer(){
     return "_t" + to_string(namer++);
 }
@@ -88,8 +88,8 @@ bool isValidVariable(string s, bool isTempVar = false)
 }
 
 void chooseCondPrint(string expr, string oper, string condVar, string returnVar){
-
-    string condName = "choose" + to_string(chooseNamer) + "cond" + to_string(condNamer++); //choose0cond0
+    condNamer++;
+    string condName = "choose" + to_string(chooseNamer) + "cond" + to_string(condNamer); //choose0cond0
     string body = "choose" + to_string(chooseNamer) + "body" + to_string(condNamer); //choose0body0
     string chooseEnd = "choose" + to_string(chooseNamer) + "end" + to_string(condNamer); //choose0end0
 
@@ -114,22 +114,28 @@ void chooseCondPrint(string expr, string oper, string condVar, string returnVar)
 
 
 string choose(string var){
-
+    
     var = var.substr(var.find("(")+1);  // deleting first "choose(" and ")" part
     var = var.substr(0, var.size()-1);
     vector<string> exprs;
-    for ( int i = 0; i < 3; i++) {
+    int parantheses = 0;
+    string expr = "";
 
-        if(var.find(",")<var.size()){
-            string expr = var.substr(0, var.find(",")); 
-            var=var.substr(var.find(",")+1);
+    for(char ch : var){
+        if( ch == ',' && parantheses == 0){
             exprs.push_back(expr);
-        }else {
-            errorHandling(lineNumber);
+            expr = "";
+        }else{   
+            if(ch == '('){
+                parantheses++;
+            } else if(ch==')'){
+                parantheses--;
+            }
+            expr = expr + ch;
         }
     }
 
-    string expr4 = var;
+    string expr4 = expr;
     string expr3 = exprs.back();
     exprs.pop_back();
     string expr2 = exprs.back();
@@ -298,12 +304,10 @@ void postfix(string expr){
 
     while (!revPostfix.empty())
     {
-        postfixExp.push(revPostfix.top());
+        postfixExp.push(revPostfix.top()); 
         revPostfix.pop();
     }
 }
-
-//string operators = "-+()/*";  yukarıda
 
 string evaluate(string expr){
 
@@ -317,15 +321,14 @@ string evaluate(string expr){
         if(isValidNumber(postfixExp.top())){ //checks before its a valid number
             return postfixExp.top(); //->There should be something like declaereVariable ?
         } else {
-             string singleVar;
-             string loadVar;
+            string singleVar;
+            string loadVar;
             if(postfixExp.top().find("choose")<postfixExp.top().size()){
                 return choose(postfixExp.top());
               //  loadVar = "_t" + to_string(namer++);
             } else if(isValidVariable(postfixExp.top())){
-                singleVar = "_t" + to_string(namer++);
-                loadVar = postfixExp.top();
-                otherStatements.push_back("%" + singleVar + " = load i32* %" + loadVar);
+                singleVar = varNamer();
+                otherStatements.push_back("%" + singleVar + " = load i32* %" + postfixExp.top());
                 return "%" + singleVar;
             } else {
                 errorHandling(lineNumber);
@@ -334,6 +337,8 @@ string evaluate(string expr){
     }
 
     stack<pair<string,bool>> taken; 
+    string returnVar = varNamer();
+    declareVariable(returnVar);  // This will be returned
 
     while (!postfixExp.empty())  { // stack boş olana dek
 
@@ -341,7 +346,8 @@ string evaluate(string expr){
 
         if(s_top.find("choose")<s_top.size()){
             string toTaken = choose(postfixExp.top());
-            taken.push(make_pair(toTaken,false));
+            postfixExp.pop();
+            taken.push(make_pair(toTaken,true));
 
         }else if (!(operators.find(s_top) < operators.length())){ //s_top operator değil ise
             taken.push(make_pair(s_top,false)); // diğer stack'e at
@@ -368,36 +374,49 @@ string evaluate(string expr){
                 operation = "udiv";
             }
 
-            string pushVar, loadVar, opVar; //variable to be pushed, temp var for loading, temp var for operation
+            string operand1, operand2;
+            bool var1IsNumb = false;
             
-            if(!isValidNumber(var1)){ //var1 is not a number
-                isValidVariable(var1,isTempVar1); 
-
-                pushVar = var1;
-                loadVar = "_t" + to_string(namer++);
-                otherStatements.push_back( "%" + loadVar + " = load i32* %" + pushVar);
-
-            } else { //var1 is a number
-                pushVar = "_t" + to_string(namer++);
-                declareStatements.push_back("%" + pushVar + " = alloca i32");
-                declareStatements.push_back("store i32 " + var1 + ", i32* %" + pushVar);
-        
-                loadVar = "_t" + to_string(namer++);
-                otherStatements.push_back("%" + loadVar + " = load i32* %" + pushVar);               
-            } 
-
-            if(!isValidNumber(var2)){  // var2 is variable
-                isValidVariable(var2,isTempVar2);
-                opVar = "%t" + to_string(namer++); // % kısmı önemli
-                otherStatements.push_back(opVar + " = load i32* %" + var2);
-            } else { //var2 is number
-               opVar = var2;
-
+            if(!isValidNumber(var1)){ 
+                isValidVariable(var1,isTempVar1);
+                 if(!isTempVar1){ 
+                    operand1 = "%"+varNamer();
+                    otherStatements.push_back( operand1 + " = load i32* %" + var1);
+                 } else {
+                     operand1 = var1;
+                 }
+            } else {
+                operand1 = var1;
+                var1IsNumb = true;
             }
 
-            string tempVar = "_t" + to_string(namer++);
-            otherStatements.push_back("%"+tempVar+" = " + operation + " i32 %" + loadVar + ", " + opVar);
-            otherStatements.push_back("store i32 %"+tempVar+", i32* %"+pushVar);
+            if(!isValidNumber(var2)){
+                 isValidVariable(var2,isTempVar2);
+                if(!isTempVar2){ 
+                    operand2 = "%"+varNamer();
+                    otherStatements.push_back( operand2 + " = load i32* %" + var2);
+                } else {
+                     operand2 = var2;
+                }
+            } else {
+                if(var1IsNumb){
+                    otherStatements.push_back("store i32 "+ var2 +", i32* %" + returnVar);
+                    operand2 = "%"+varNamer();
+                    otherStatements.push_back( operand2 + " = load i32* %" + returnVar);
+                } else {
+                 operand2 = var2;
+                }
+            }
+
+            if(var1IsNumb){
+               string tempOperand = operand1;
+               operand1 = operand2;
+               operand2 = tempOperand;
+               var1IsNumb = false;
+            }
+      
+            string pushVar = "%" + varNamer();
+            otherStatements.push_back(pushVar+" = " + operation + " i32 " + operand1 + ", " + operand2);
 
             postfixExp.pop();
             taken.push(make_pair(pushVar,true));
@@ -405,7 +424,7 @@ string evaluate(string expr){
         }
     }
 
-    string sendVar = "_t" + to_string(namer++);
-    otherStatements.push_back("%" + sendVar + " = load i32* %" + taken.top().first);
-    return "%" + sendVar;
+    string topVar = taken.top().first;
+    taken.pop();
+    return topVar;
 }
