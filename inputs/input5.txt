@@ -1,0 +1,3 @@
+while(expression + ((azeroexpression*0)-0*(anotherexpression)) ) {
+    a = 3
+    } 
