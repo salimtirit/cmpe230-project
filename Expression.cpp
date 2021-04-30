@@ -134,7 +134,9 @@ string choose(string var){
             expr = expr + ch;
         }
     }
-
+    if(exprs.size()!=3){
+        errorHandling(lineNumber);
+    }
     string expr4 = expr;
     string expr3 = exprs.back();
     exprs.pop_back();
@@ -316,6 +318,11 @@ stack<string> postfix(string expr,stack<string> postfixExp){
 }
 
 string evaluate(string expr){
+    if (expr == "")
+    {
+        errorHandling(lineNumber);
+    }
+    
     stack<string> postfixExp;
 
     postfixExp = postfix(expr,postfixExp); //making new postfix expression
