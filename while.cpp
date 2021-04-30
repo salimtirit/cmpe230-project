@@ -29,8 +29,6 @@ void assign(string i)
 void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
 {
     string i = lines[lineNumber];
-    i.erase(remove(i.begin(), i.end(), '\t'), i.end()); // removes all tab characters
-    i.erase(remove(i.begin(), i.end(), ' '), i.end());  //removes all spaces
 
     if (i.find("#") < i.length())
     {
@@ -47,7 +45,7 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         }
         nOfLoops++;
         int openPosition = i.find("(");
-        int closePosition = i.find(")");
+        int closePosition = i.find("){");
         string ifORwhile[2] = {"if","while"};
         int choose;
         int smallNamer;
@@ -101,10 +99,13 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
                 lineNumber++;
                 if (lineNumber == lines.size())
                 {
-                    errorHandling(lineNumber);
+                    errorHandling(lineNumber-1);
                 }
-            }else {
-                errorHandling(lineNumber);
+            }else if(lineNumber==lines.size()&&lines[lineNumber].find("}")){
+                //cout << "here i am" << endl;
+            }
+            else {
+                errorHandling(lineNumber-1);
             }
             i = lines[lineNumber];
         }
@@ -141,8 +142,9 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
 
 void errorHandling(int line){
     //olması gereken hemen alttaki aslında
-    //string s = "call i32 (i8*, ...)* @printf(i8* getelementptr ([4 x i8]* @print.str, i32 0, i32 0), i32 " ++" )" 
-    outfile << "Line "<< line << ": syntax error" << endl;
+    string s = "call i32 (i8*, ...)* @printf(i8* getelementptr ([23 x i8]* @print.str1, i32 0, i32 0), i32 " +to_string(line)+" )" ;
+    //outfile << "Line "<< line << ": syntax error" << endl;
+    outfile << s << endl;
     outfile << "ret i32 0" << endl; //return 0
     outfile << "}" << endl;         //end of main
     exit(0);
@@ -150,8 +152,8 @@ void errorHandling(int line){
 
 int main(int argc, char const *argv[])
 {
-    string inputFile =  "./inputs/input4.txt";//argv[1];
-    string outputFile = "output.txt";//argv[2];              
+    string inputFile = argv[1];  //"./inputs/testcase8.my";  //        
+    string outputFile = argv[2];  //"output.txt";             //          
 
     
     infile.open(inputFile);
@@ -164,13 +166,15 @@ int main(int argc, char const *argv[])
 
     while (getline(infile, line))
     { //take lines
+        line.erase(remove(line.begin(), line.end(), '\t'), line.end()); // removes all tab characters
+        line.erase(remove(line.begin(), line.end(), ' '), line.end());  //removes all spaces
         lines.push_back(line);
     }
 
     outfile << "; ModuleID = 'mylang2ir'" << endl;
     outfile << "declare i32 @printf(i8*, ...)" << endl;
     outfile << "@print.str = constant [4 x i8] c\"%d\\0A\\00\"" << endl;
-
+    outfile << "@print.str1 = constant [23 x i8] c\"Line %d: syntax error\\0A\\00\"" << endl;
     outfile << "define i32 @main() {" << endl; // main starts
 
     //main for loop

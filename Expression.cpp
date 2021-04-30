@@ -195,22 +195,27 @@ void postfix(string expr){
                         var = "";
 
                         nested++;
-                    } 
+                    } else {
+                        nestedParantheses++;
+                    }
                 } else {
                 var = var + ch;
                 }
             } else { // ch == ')'
-                
-                if(nested){
-                    var = var + ch;
-                    nested--;
-                    continue;
-                } else { // finished
-                    var = "choose(" + nestedChoose + var + ")";
-                    revPostfix.push(var);
-                    var = "";
-                    prevOper = "";
-                    takingChoose = false;
+                if(nestedParantheses>0){
+                    nestedParantheses--;
+                }else{
+                    if(nested){
+                        var = var + ch;
+                        nested--;
+                        continue;
+                    } else { // finished
+                        var = "choose(" + nestedChoose + var + ")";
+                        revPostfix.push(var);
+                        var = "";
+                        prevOper = "";
+                        takingChoose = false;
+                    }
                 }
             }
 
@@ -305,6 +310,7 @@ void postfix(string expr){
     while (!revPostfix.empty())
     {
         postfixExp.push(revPostfix.top()); 
+        cout << revPostfix.top() << endl;
         revPostfix.pop();
     }
 }
@@ -344,23 +350,30 @@ string evaluate(string expr){
 
         string s_top = postfixExp.top();
 
-        if(s_top.find("choose")<s_top.size()){
-            string toTaken = choose(postfixExp.top());
-            postfixExp.pop();
-            taken.push(make_pair(toTaken,true));
-
-        }else if (!(operators.find(s_top) < operators.length())){ //s_top operator değil ise
+        if (!(operators.find(s_top) < operators.length()) || (s_top.find("choose(")<s_top.size())){ //s_top operator değil ise
             taken.push(make_pair(s_top,false)); // diğer stack'e at
             postfixExp.pop(); //I will check validity during operations since I need to know if it is a numb or a var
 
         } else { //s_top bir operator ise
 
-            string var2 = taken.top().first;
-            bool isTempVar2 = taken.top().second;
-            taken.pop();
+            bool isTempVar1, isTempVar2;
 
-            string var1 = taken.top().first; 
-            bool isTempVar1 = taken.top().second; 
+            string var2 = taken.top().first;
+            if(var2.find("choose(")<var2.size()){
+                var2 = choose(var2);
+                isTempVar2 = true;
+            } else {
+                isTempVar2 = taken.top().second;
+            }
+            taken.pop();
+            
+            string var1 = taken.top().first;
+            if(var1.find("choose(")<var1.size()){
+                var1 = choose(var1);
+                isTempVar1 = true;
+            } else {
+                isTempVar1 = taken.top().second;
+            }
             taken.pop();
 
             string operation;
@@ -371,7 +384,7 @@ string evaluate(string expr){
             }else if(s_top == "*"){
                 operation = "mul";    
             }else{
-                operation = "udiv";
+                operation = "sdiv";
             }
 
             string operand1, operand2;
