@@ -1,0 +1,6 @@
+a= 1
+b= 2
+c = 3
+w = choose((0-3),a,b,choose(1,6,4,5))
+
+print(w)

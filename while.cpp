@@ -10,6 +10,9 @@ int whileNamer = 0;
 int ifNamer = 0;
 int nOfLoops = 0;
 
+ifstream infile;
+ofstream outfile;
+
 void assign(string i)
 {
     int position = i.find("=");
@@ -19,7 +22,7 @@ void assign(string i)
     if (isValidVariable(variable))
     {
         string rightPart = evaluate(otherPart); //this part is going to change we may need to call
-        cout << "store i32 " << rightPart << ", i32* %" << variable << endl;
+        otherStatements.push_back("store i32 " + rightPart + ", i32* %" + variable);
     }
 }
 
@@ -40,8 +43,7 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
     }
     else if(i.find("while(") == 0 || i.find("if(") == 0){
         if(nOfLoops){
-            cout << "Syntax error in line #" << lineNumber << endl;
-            exit(0);
+            errorHandling(lineNumber);
         }
         nOfLoops++;
         int openPosition = i.find("(");
@@ -60,37 +62,36 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         }
         if (i.substr(0, openPosition) != ifORwhile[choose] || i.substr(closePosition + 1, i.length()) != "{")
         {
-            cout << "Syntax Error in line #" << lineNumber << endl;
-            exit(0);
+            errorHandling(lineNumber);
         }      
 
         string conditionName = ifORwhile[choose]+"cond" + to_string(smallNamer);
         string bodyName = ifORwhile[choose]+"body" + to_string(smallNamer);
         string endName = ifORwhile[choose]+"end" + to_string(smallNamer);  
 
-        cout << "br label %" + conditionName << endl;
-        cout << conditionName << ":" << endl;
+        otherStatements.push_back("br label %" + conditionName);
+        otherStatements.push_back(conditionName + ":");
         string condition = i.substr(openPosition + 1, closePosition - openPosition - 1);
         
         string namerCondition1;
         if(isValidNumber(condition)){
             string tempVar = varNamer();
-            cout << "%"+tempVar + " = alloca i32"<<endl;
-            cout << "store i32 "+condition+", i32* %"+tempVar << endl;
-           namerCondition1 ="%"+ varNamer();
-           cout << namerCondition1 + " = load i32* %" + tempVar<<endl;
+            declareStatements.push_back("%"+tempVar + " = alloca i32");
+            declareStatements.push_back("store i32 "+condition+", i32* %"+tempVar);
+            namerCondition1 ="%"+ varNamer();
+            otherStatements.push_back(namerCondition1 + " = load i32* %" + tempVar);
         } else {
             namerCondition1 = evaluate(condition);
         }
 
         string namerCondition2 = varNamer();
         string s2 = "%" + namerCondition2 + " = icmp ne i32 " + namerCondition1 + ", 0";
-        cout << s2 << endl;
+        otherStatements.push_back(s2);
 
         string s3 = "br i1 %" + namerCondition2 + ", label %" + bodyName + ", label %" + endName;
-        cout << s3 << endl;
+        otherStatements.push_back(s3);
 
-        cout << bodyName << ":" << endl;
+        otherStatements.push_back(bodyName + ":");
 
         lineNumber++;
         while (!(i.find("}") < i.size()))
@@ -98,9 +99,12 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
             if(lineNumber < lines.size()){
                 mainLoop(lines, lineNumber, nOfLoops);
                 lineNumber++;
+                if (lineNumber == lines.size())
+                {
+                    errorHandling(lineNumber);
+                }
             }else {
-                cout << "No curly bracets in line #"<< lines.size() << endl; // last line number
-                exit(0);
+                errorHandling(lineNumber);
             }
             i = lines[lineNumber];
         }
@@ -108,53 +112,51 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
         nOfLoops--;
 
         if(choose){
-            cout << "br label %" + conditionName << endl;
+            otherStatements.push_back("br label %" + conditionName);
         }else{
-            cout << "br label %" + endName << endl;
+            otherStatements.push_back("br label %" + endName);
         }
-        cout << endName << ":" << endl;
+        otherStatements.push_back(endName + ":");
     }
     else if (i.find("print(") < i.size())
     {
         int openPosition = i.find("(");
         int closePosition = i.find(")"); 
         if(i.substr(0,openPosition)!="print" || i.substr(closePosition+1)!=""){
-            cout << "syntax error in line: "<<lineNumber <<endl;
-            exit(0);
+            errorHandling(lineNumber);
         }
         string printExpr = i.substr(openPosition + 1, closePosition - openPosition - 1);
         string printVar = evaluate(printExpr);      
-        cout << "call i32 (i8*, ...)* @printf(i8* getelementptr ([4 x i8]* @print.str, i32 0, i32 0), i32 " +printVar+" )" << endl;
-        
+        otherStatements.push_back("call i32 (i8*, ...)* @printf(i8* getelementptr ([4 x i8]* @print.str, i32 0, i32 0), i32 " +printVar+" )" );        
     }
     else if (i == "")
     {
         //do nothing
     }
     else
-    {
-        cout << "Syntax Error in line # here" << lineNumber << endl;
-        exit(0);
+    {   
+        errorHandling(lineNumber);
     }
+}
+
+void errorHandling(int line){
+    //olması gereken hemen alttaki aslında
+    //string s = "call i32 (i8*, ...)* @printf(i8* getelementptr ([4 x i8]* @print.str, i32 0, i32 0), i32 " ++" )" 
+    outfile << "Line "<< line << ": syntax error" << endl;
+    outfile << "ret i32 0" << endl; //return 0
+    outfile << "}" << endl;         //end of main
+    exit(0);
 }
 
 int main(int argc, char const *argv[])
 {
-   cout << "; ModuleID = 'mylang2ir'" << endl;
-   cout << "declare i32 @printf(i8*, ...)" << endl;
-   cout << "@print.str = constant [4 x i8] c\"%d\\0A\\00\"" << endl;
+    string inputFile =  "./inputs/input4.txt";//argv[1];
+    string outputFile = "output.txt";//argv[2];              
 
-
-    cout << "define i32 @main() {" << endl; // main starts
-    vector<string> tokens;
-
-    string inputFile =  "input3.txt" ;   // "D:\\VisualWorkspace\\cmpe230-project-main\\inputs\\testcase2.my";  //argv[1];
-    string outputFile = "output.txt"; //argv[2];
-
-    ifstream infile;
+    
     infile.open(inputFile);
 
-    ofstream outfile;
+    
     outfile.open(outputFile);
 
     vector<string> lines;
@@ -165,13 +167,26 @@ int main(int argc, char const *argv[])
         lines.push_back(line);
     }
 
+    outfile << "; ModuleID = 'mylang2ir'" << endl;
+    outfile << "declare i32 @printf(i8*, ...)" << endl;
+    outfile << "@print.str = constant [4 x i8] c\"%d\\0A\\00\"" << endl;
+
+    outfile << "define i32 @main() {" << endl; // main starts
+
     //main for loop
     for (; lineNumber < lines.size(); lineNumber++)
     {
         mainLoop(lines, lineNumber, nOfLoops);
     }
 
-    cout << "ret i32 0" << endl; //return 0
-    cout << "}" << endl;         //end of main
+    for(string str: declareStatements){
+        outfile << str << endl;
+    }
+    for(string str: otherStatements){
+        outfile << str << endl;
+    }
+
+    outfile << "ret i32 0" << endl; //return 0
+    outfile << "}" << endl;         //end of main
     return 0;
 }

@@ -3,3 +3,5 @@ if(a){
     b = 2
 }
 a = 2
+print(a)
+print(b)

@@ -69,3 +69,8 @@ en son basmak için cout ları assign ve diğerleri diye ayır
 önce assignı bas sonra diğerlerini
 
 line numberlar 0 dan mı 1 den mi başlamalı
+
+
+expression 117 - 120 -282 -296
+
+testcase 6 da hata veriyor. sonsuz döngü muhtemelen

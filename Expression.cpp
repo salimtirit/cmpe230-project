@@ -6,6 +6,9 @@
 using namespace std;
 int lineNumber = 0;
 map<string, int> variables; //name may ned to be changed due to conflicts
+vector<string> declareStatements;
+vector<string> otherStatements;
+
 
 string operators = "-+()/*";
 string bigger = "*/";
@@ -17,7 +20,7 @@ int namer = 0;
 int chooseNamer = 0;
 int condNamer = 0;
 string evaluate(string expr);
-
+void errorHandling(int line);
 string varNamer(){
     return "_t" + to_string(namer++);
 }
@@ -26,10 +29,18 @@ void declareVariable(string name, int value = 0)
 {
     if (variables.find(name) == variables.end())
     {
-        cout << "%" << name << " = alloca i32" << endl;
+        string str1 =  "%" + name + " = alloca i32";
+        declareStatements.push_back(str1);
     }
     variables[name] = value;                              //  variables.insert(pair<string,int>(name,value));
-    cout << "store i32 " << variables.find(name)->second  << ", i32* %" << name << endl; //variables[name]->second
+    string str2 = "store i32 " + to_string(variables.find(name)->second) + ", i32* %" + name;
+    if (value == 0)
+    {
+        declareStatements.push_back(str2);  // bura yanlış olabilir.
+    }else{
+        otherStatements.push_back(str2);
+    }
+    
 }
 
 bool isValidNumber(string s){
@@ -64,9 +75,7 @@ bool isValidVariable(string s, bool isTempVar = false)
         for (int i = 1; i < s.length(); i++)  {
             int character = s[i];
             if (!((character > 96 && character < 123) || (character > 64 && character < 90) || (character > 47 && character < 58))) {
-                cout << "Invalid variable in line #" << lineNumber << endl;
-                exit(0);
-                //return false;
+                errorHandling(lineNumber);
             }
         }
         if (variables.find(s) == variables.end())  { //if it's not declared before
@@ -74,8 +83,7 @@ bool isValidVariable(string s, bool isTempVar = false)
         }
         return true;
     } else {
-        cout << "Invalid variable in line #" << lineNumber << endl;
-        exit(0);
+        errorHandling(lineNumber);
     }
 }
 
@@ -85,24 +93,22 @@ void chooseCondPrint(string expr, string oper, string condVar, string returnVar)
     string body = "choose" + to_string(chooseNamer) + "body" + to_string(condNamer); //choose0body0
     string chooseEnd = "choose" + to_string(chooseNamer) + "end" + to_string(condNamer); //choose0end0
 
-    cout << "br label %" << condName << endl; 
-    cout << condName << ":" << endl; 
+    otherStatements.push_back("br label %" + condName);
+    otherStatements.push_back(condName + ":");
 
     string boolVar = varNamer();
-    cout << "%"+ boolVar << " = icmp " + oper + " i32 " << condVar << ", 0" << endl; //bool variable is above, not changing
-    cout << "br i1 %" << boolVar << ", label %" << body << ", label %"<< chooseEnd << endl; 
+    otherStatements.push_back("%"+ boolVar + " = icmp " + oper + " i32 " + condVar + ", 0");
+    otherStatements.push_back("br i1 %" + boolVar + ", label %" + body + ", label %"+ chooseEnd);
+    otherStatements.push_back(body + ":");
 
-    cout << body << ":" << endl;
- 
     if(isValidNumber(expr)){
-         cout << "store i32 "+ expr +", i32* %" + returnVar << endl;  
+        otherStatements.push_back("store i32 "+ expr +", i32* %" + returnVar);
     } else { //expr2 will be given as a temp var, I want to give its value to another temp var which is returnVar
-        cout << "store i32 "+ evaluate(expr) +", i32* %" + returnVar << endl;
+        otherStatements.push_back("store i32 "+ evaluate(expr) +", i32* %" + returnVar);
     }
 
-    cout << "br label %"+chooseEnd << endl;
-    cout << chooseEnd +":" << endl;
-
+    otherStatements.push_back("br label %"+chooseEnd);
+    otherStatements.push_back(chooseEnd +":");
 }
 
 
@@ -119,8 +125,7 @@ string choose(string var){
             var=var.substr(var.find(",")+1);
             exprs.push_back(expr);
         }else {
-            cout << "1error in line: "<< lineNumber <<endl;
-            exit(0);
+            errorHandling(lineNumber);
         }
     }
 
@@ -135,17 +140,17 @@ string choose(string var){
 
     if(isValidNumber(expr1)){
         string tempRealVar = "%"+varNamer();
-        cout << tempRealVar + " = alloca i32"<<endl;
-        cout << "store i32 "+expr1+", i32* "+tempRealVar<<endl;
+        declareStatements.push_back(tempRealVar + " = alloca i32");
+        declareStatements.push_back("store i32 "+expr1+", i32* "+tempRealVar);
         condVar = "%" + varNamer();
-        cout << condVar << " = load i32* " << tempRealVar << endl;  
+        otherStatements.push_back(condVar + " = load i32* " + tempRealVar);
     } else {
         condVar = evaluate(expr1); //It returns a tempVar
     }
     
     string returnVar = varNamer();
-    cout << "%" + returnVar + " = alloca i32"<<endl;
-    cout << "store i32 "+to_string(0)+", i32* %"+returnVar<<endl;
+    declareStatements.push_back("%" + returnVar + " = alloca i32");
+    declareStatements.push_back("store i32 "+to_string(0)+", i32* %"+ returnVar);
 
     chooseCondPrint(expr2, "eq", condVar, returnVar);
     chooseCondPrint(expr3, "sgt", condVar, returnVar);
@@ -155,7 +160,7 @@ string choose(string var){
     condNamer = 0;
 
     string tempReturnVar = varNamer();
-    cout << "%" + tempReturnVar + " = load i32* %" + returnVar<<endl;
+    otherStatements.push_back("%" + tempReturnVar + " = load i32* %" + returnVar);
 
     return "%"+tempReturnVar;
 }
@@ -175,8 +180,7 @@ void postfix(string expr){
             if(ch != ')'){ //kalan ifadeyi almayı deniyorum
                 if (ch == expr.back() && expr.find(ch)==(expr.size()-1) ) // ')' was expected, reached the end however
                 {
-                    cout << "error in line: " << lineNumber << endl;
-                    exit(0);
+                    errorHandling(lineNumber);
                 }
 
                 if(ch == '('){
@@ -207,24 +211,20 @@ void postfix(string expr){
         } else if (operators.find(ch) < operators.length()) { // ch bir operator
 
             if(ch == expr.back() && ch != ')' ){  // The last character of the string can not be an operator except ")", a variable is expected
-                cout << "syntax error in line: " << lineNumber << endl;
-                exit(0);  
+                errorHandling(lineNumber); 
             }
 
             if(prevOper != "" ){  // only +( and )+ and )) and (( is valid, others are invalid
                 if(ch == ')'){   //
                     if(prevOper != ")"){
-                        cout << "syntax error in line: " << lineNumber << endl;
-                        exit(0);  
+                        errorHandling(lineNumber);
                     }
                 } else if(prevOper == "("){
                     if(ch != '('){
-                        cout << "syntax error in line: " << lineNumber << endl;
-                        exit(0);
+                        errorHandling(lineNumber);
                     }
                 }else if(prevOper != ")" && ch != '('){
-                    cout << "syntax error in line: " << lineNumber << endl;
-                    exit(0);  
+                    errorHandling(lineNumber);  
                 } 
             }
             string s(1,ch);
@@ -245,8 +245,9 @@ void postfix(string expr){
 
             if (oper.empty()) {    // if operator stack is empty
                 if(ch == ')'){
-                    cout << "'(' is expected, error in line: " << lineNumber << endl;
-                    exit(0); 
+                    otherStatements.push_back("'(' is expected, error in line: " +to_string(lineNumber));
+                    //cout << "'(' is expected, error in line: " << lineNumber << endl; // testcase 4 de hata veriyor ya bu ya da alttaki 
+                    errorHandling(lineNumber);
                 }
                 oper.push(ch); // directly put ch to stack
             } else { // stack boş değilse
@@ -258,8 +259,9 @@ void postfix(string expr){
                         oper.pop();
                     
                         if(oper.empty()){
-                        cout << "'(' is expected, error in line: " << lineNumber << endl;
-                        exit(0); 
+                        otherStatements.push_back("'(' is expected, error in line: " +to_string(lineNumber));
+                        //cout << "'(' is expected, error in line: " << lineNumber << endl; // testcase 4 de hata veriyor
+                        errorHandling(lineNumber); 
                         }
                     }                    
                     oper.pop();
@@ -323,11 +325,10 @@ string evaluate(string expr){
             } else if(isValidVariable(postfixExp.top())){
                 singleVar = "_t" + to_string(namer++);
                 loadVar = postfixExp.top();
-                cout << "%" + singleVar + " = load i32* %" + loadVar << endl;
+                otherStatements.push_back("%" + singleVar + " = load i32* %" + loadVar);
                 return "%" + singleVar;
             } else {
-                cout << "Invalid variable in line #" << lineNumber << endl;
-                exit(0);
+                errorHandling(lineNumber);
             }
         }
     }
@@ -374,31 +375,29 @@ string evaluate(string expr){
 
                 pushVar = var1;
                 loadVar = "_t" + to_string(namer++);
-                cout << "%" + loadVar + " = load i32* %" + pushVar << endl;
+                otherStatements.push_back( "%" + loadVar + " = load i32* %" + pushVar);
 
             } else { //var1 is a number
                 pushVar = "_t" + to_string(namer++);
-                cout << "%" + pushVar + " = alloca i32" << endl;  //alloca new var
-                cout << "store i32 " + var1 + ", i32* %" + pushVar << endl;
+                declareStatements.push_back("%" + pushVar + " = alloca i32");
+                declareStatements.push_back("store i32 " + var1 + ", i32* %" + pushVar);
         
                 loadVar = "_t" + to_string(namer++);
-                cout << "%" + loadVar + " = load i32* %" + pushVar << endl;
-               
+                otherStatements.push_back("%" + loadVar + " = load i32* %" + pushVar);               
             } 
 
             if(!isValidNumber(var2)){  // var2 is variable
                 isValidVariable(var2,isTempVar2);
                 opVar = "%t" + to_string(namer++); // % kısmı önemli
-                cout << opVar + " = load i32* %" + var2 << endl;  //load
-
+                otherStatements.push_back(opVar + " = load i32* %" + var2);
             } else { //var2 is number
                opVar = var2;
 
             }
 
             string tempVar = "_t" + to_string(namer++);
-            cout << "%"+tempVar+" = " + operation + " i32 %" + loadVar + ", " + opVar << endl;
-            cout <<"store i32 %"+tempVar+", i32* %"+pushVar << endl;
+            otherStatements.push_back("%"+tempVar+" = " + operation + " i32 %" + loadVar + ", " + opVar);
+            otherStatements.push_back("store i32 %"+tempVar+", i32* %"+pushVar);
 
             postfixExp.pop();
             taken.push(make_pair(pushVar,true));
@@ -407,6 +406,6 @@ string evaluate(string expr){
     }
 
     string sendVar = "_t" + to_string(namer++);
-    cout << "%" + sendVar + " = load i32* %" + taken.top().first << endl;
+    otherStatements.push_back("%" + sendVar + " = load i32* %" + taken.top().first);
     return "%" + sendVar;
 }
