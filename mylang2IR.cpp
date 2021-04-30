@@ -152,8 +152,8 @@ void errorHandling(int line){
 
 int main(int argc, char const *argv[])
 {
-    string inputFile = argv[1];  //"./inputs/testcase8.my";  //        
-    string outputFile = argv[2];  //"output.txt";             //          
+    string inputFile = argv[1];  //"./inputs/testcase8.my";  //      
+    string outputFile = inputFile.substr(0,inputFile.find("my"))+"ll";       
 
     
     infile.open(inputFile);
