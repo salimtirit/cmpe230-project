@@ -310,7 +310,6 @@ stack<string> postfix(string expr,stack<string> postfixExp){
     while (!revPostfix.empty())
     {
         postfixExp.push(revPostfix.top()); 
-        cout << revPostfix.top() << endl;
         revPostfix.pop();
     }
     return postfixExp;
