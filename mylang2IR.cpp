@@ -1,196 +1,443 @@
 #include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <vector>
-#include "Expression.cpp"
+#include <stack>
+#include <cstring>
+#include <map>
 
 using namespace std;
+int lineNumber = 0; //current line
+map<string, int> variables; //a map that stores all valid variables
+vector<string> declareStatements;  //stores statements that will be printed
+vector<string> otherStatements;
 
-int whileNamer = 0;
-int ifNamer = 0;
-int nOfLoops = 0;
+string operators = "-+()/*";
+string bigger = "*/";  //operators that has precedence over others
+string smaller = "-+";
 
-ifstream infile;
-ofstream outfile;
+stack<char> oper; //stores operations during making postfix expression
+int namer = 0; //for naming temproray variables
+int chooseNamer = 0;  //names choose function labels
+int condNamer = 0; //names choose functions condition labels
+string evaluate(string expr); //method for evaluating statements
+void errorHandling(int line); 
 
-void assign(string i)
-{
-    int position = i.find("=");
-    string variable = i.substr(0, position);
-    string otherPart = i.substr(position + 1, i.length());
-
-    if (isValidVariable(variable))
-    {
-        string rightPart = evaluate(otherPart); //this part is going to change we may need to call
-        otherStatements.push_back("store i32 " + rightPart + ", i32* %" + variable);
-    }
+string varNamer(){  //names temprory variables
+    return "_t" + to_string(namer++);
 }
 
-void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
+ //declares new valid variables
+ //writes declaration statements and stores them in a map
+
+void declareVariable(string name, int value = 0) 
 {
-    string i = lines[lineNumber];
-
-    if (i.find("#") < i.length())
+    if (variables.find(name) == variables.end()) //if it's not declared before
     {
-        i = i.substr(0, i.find("#"));
+        string str1 =  "%" + name + " = alloca i32";
+        declareStatements.push_back(str1);
     }
-
-    if (i.find("=") < i.length()) //this part is just for assignment
+    variables[name] = value;           
+    string str2 = "store i32 " + to_string(variables.find(name)->second) + ", i32* %" + name;
+    if (value == 0)
     {
-        assign(i);
+        declareStatements.push_back(str2);  
+    }else{
+        otherStatements.push_back(str2);
     }
-    else if(i.find("while(") == 0 || i.find("if(") == 0){
-        if(nOfLoops){
-            errorHandling(lineNumber);
-        }
-        nOfLoops++;
-        int openPosition = i.find("(");
-        int closePosition = i.find("){");
-        string ifORwhile[2] = {"if","while"};
-        int choose;
-        int smallNamer;
-        if (i.find("if(") == 0){
-            smallNamer = ifNamer;
-            ifNamer++;
-            choose = 0;
-        }else{
-            smallNamer = whileNamer;
-            whileNamer++;            
-            choose = 1;
-        }
-        if (i.substr(0, openPosition) != ifORwhile[choose] || i.substr(closePosition + 1, i.length()) != "{")
+    
+}
+
+//checks whether given string is a valid number
+//returns true if it's a number, else returns false
+
+bool isValidNumber(string s){ 
+    
+    for (int j = 0; j < s.length(); j++) {
+        int character = s[j];
+        if (!(character > 47 && character < 58)) //checks whether character is a number using ascii values
         {
-            errorHandling(lineNumber);
-        }      
-
-        string conditionName = ifORwhile[choose]+"cond" + to_string(smallNamer);
-        string bodyName = ifORwhile[choose]+"body" + to_string(smallNamer);
-        string endName = ifORwhile[choose]+"end" + to_string(smallNamer);  
-
-        otherStatements.push_back("br label %" + conditionName);
-        otherStatements.push_back(conditionName + ":");
-        string condition = i.substr(openPosition + 1, closePosition - openPosition - 1);
-        
-        string namerCondition1;
-        if(isValidNumber(condition)){
-            string tempVar = varNamer();
-            declareStatements.push_back("%"+tempVar + " = alloca i32");
-            declareStatements.push_back("store i32 "+condition+", i32* %"+tempVar);
-            namerCondition1 ="%"+ varNamer();
-            otherStatements.push_back(namerCondition1 + " = load i32* %" + tempVar);
-        } else {
-            namerCondition1 = evaluate(condition);
+            return false; 
         }
-
-        string namerCondition2 = varNamer();
-        string s2 = "%" + namerCondition2 + " = icmp ne i32 " + namerCondition1 + ", 0";
-        otherStatements.push_back(s2);
-
-        string s3 = "br i1 %" + namerCondition2 + ", label %" + bodyName + ", label %" + endName;
-        otherStatements.push_back(s3);
-
-        otherStatements.push_back(bodyName + ":");
-
-        lineNumber++;
-        while (!(i.find("}") < i.size()))
-        {
-            if(lineNumber < lines.size()){
-                mainLoop(lines, lineNumber, nOfLoops);
-                lineNumber++;
-                if (lineNumber == lines.size())
-                {
-                    errorHandling(lineNumber-1);
-                }
-            }else if(lineNumber==lines.size()&&lines[lineNumber].find("}")){
-                //cout << "here i am" << endl;
-            }
-            else {
-                errorHandling(lineNumber-1);
-            }
-            i = lines[lineNumber];
-        }
-
-        nOfLoops--;
-
-        if(choose){
-            otherStatements.push_back("br label %" + conditionName);
-        }else{
-            otherStatements.push_back("br label %" + endName);
-        }
-        otherStatements.push_back(endName + ":");
     }
-    else if (i.find("print(") < i.size())
+    return true;
+}
+
+//returns true if the variable is valid, if not throws error
+//valid variable: first character from alphabet (upper or lowercase) preceeding with alphanumeric characters
+//if it's a temprorary variable, returns false
+
+bool isValidVariable(string s, bool isTempVar = false)
+{
+    if(isTempVar){ //if it's a temprorary variable
+        return false;
+    }
+
+    int firstChr = s[0];
+    if ((firstChr > 96 && firstChr < 123) || (firstChr > 64 && firstChr < 90)) // checks whether first character is a valid character using ascii 
     {
-        int openPosition = i.find("(");
-        int closePosition = i.find(")"); 
-        if(i.substr(0,openPosition)!="print" || i.substr(closePosition+1)!=""){
-            errorHandling(lineNumber);
+        for (int i = 1; i < s.length(); i++)  {
+            int character = s[i];
+            if (!((character > 96 && character < 123) || (character > 64 && character < 90) || (character > 47 && character < 58))) {
+                errorHandling(lineNumber); //if it's not a valid variable, throws error
+            }
         }
-        string printExpr = i.substr(openPosition + 1, closePosition - openPosition - 1);
-        string printVar = evaluate(printExpr);      
-        otherStatements.push_back("call i32 (i8*, ...)* @printf(i8* getelementptr ([4 x i8]* @print.str, i32 0, i32 0), i32 " +printVar+" )" );        
-    }
-    else if (i == "")
-    {
-        //do nothing
-    }
-    else
-    {   
+        if (variables.find(s) == variables.end())  { //if it's a valid variable and not declared before, declares
+            declareVariable(s);
+        }
+        return true;
+    } else {
         errorHandling(lineNumber);
     }
 }
 
-void errorHandling(int line){
-    //olması gereken hemen alttaki aslında
-    string s = "call i32 (i8*, ...)* @printf(i8* getelementptr ([23 x i8]* @print.str1, i32 0, i32 0), i32 " +to_string(line)+" )" ;
-    //outfile << "Line "<< line << ": syntax error" << endl;
-    outfile << s << endl;
-    outfile << "ret i32 0" << endl; //return 0
-    outfile << "}" << endl;         //end of main
-    exit(0);
+//writes statements for an if loop, specialized for choose function
+//takes four parameters, expression that will be evaluated, operator for bool function,
+//a condition variable which stores the value of first expression in choose function
+//and returnVar which stores value of current expression 
+
+void chooseCondPrint(string expr, string oper, string condVar, string returnVar){
+    condNamer++;
+    string condName = "choose" + to_string(chooseNamer) + "cond" + to_string(condNamer); //choose function condition label name
+    string body = "choose" + to_string(chooseNamer) + "body" + to_string(condNamer); //body label name
+    string chooseEnd = "choose" + to_string(chooseNamer) + "end" + to_string(condNamer); //end label name
+
+    otherStatements.push_back("br label %" + condName);
+    otherStatements.push_back(condName + ":");
+
+    string boolVar = varNamer(); //bool variable for if statement
+    otherStatements.push_back("%"+ boolVar + " = icmp " + oper + " i32 " + condVar + ", 0");
+    otherStatements.push_back("br i1 %" + boolVar + ", label %" + body + ", label %"+ chooseEnd);
+    otherStatements.push_back(body + ":");
+
+    if(isValidNumber(expr)){
+        otherStatements.push_back("store i32 "+ expr +", i32* %" + returnVar);
+    } else { //expr2 will be given as a temp var, I want to give its value to another temp var which is returnVar
+        otherStatements.push_back("store i32 "+ evaluate(expr) +", i32* %" + returnVar);
+    }
+
+    otherStatements.push_back("br label %"+chooseEnd);
+    otherStatements.push_back(chooseEnd +":");
 }
 
-int main(int argc, char const *argv[])
-{
-    string inputFile = argv[1];  //"./inputs/testcase8.my";  //      
-    string outputFile = inputFile.substr(0,inputFile.find("my"))+"ll";       
+//takes choose expression as a variable and writes statements for three consecutive if loops
 
+string choose(string var){
     
-    infile.open(inputFile);
+    var = var.substr(var.find("(")+1);  // deleting first "choose(" and ")" part
+    var = var.substr(0, var.size()-1);
+    vector<string> exprs;
+    int parantheses = 0;
+    string expr = "";
 
+    for(char ch : var){ //tries to seperate four expressions in the string
+        if( ch == ',' && parantheses == 0){
+            exprs.push_back(expr);
+            expr = "";
+        }else{   
+            if(ch == '('){
+                parantheses++;
+            } else if(ch==')'){
+                parantheses--;
+            }
+            expr = expr + ch;
+        }
+    }
+    if(exprs.size()!=3){  //checks whether expression's constructions are valid
+        errorHandling(lineNumber);
+    }
+    string expr4 = expr;
+    string expr3 = exprs.back();
+    exprs.pop_back();
+    string expr2 = exprs.back();
+    exprs.pop_back();   
+    string expr1 = exprs.back();
+    exprs.pop_back();
+    string condVar;
+
+    if(isValidNumber(expr1)){ //if expr1 is a number, makes the condition variable for if loops to store it's value
+        string tempRealVar = "%"+varNamer();
+        declareStatements.push_back(tempRealVar + " = alloca i32");
+        declareStatements.push_back("store i32 "+expr1+", i32* "+tempRealVar);
+        condVar = "%" + varNamer();
+        otherStatements.push_back(condVar + " = load i32* " + tempRealVar);
+    } else {
+        condVar = evaluate(expr1); //takes temp var of the expression and makes it the condition variable
+    }
     
-    outfile.open(outputFile);
+    //returnVar is the value of the choose function, it equals to values of expr2, expr3 and expr4
+    //one of the if statements will be true and that value will be valid during execution
 
-    vector<string> lines;
-    string line;
+    string returnVar = varNamer(); 
+    declareStatements.push_back("%" + returnVar + " = alloca i32");
+    declareStatements.push_back("store i32 "+to_string(0)+", i32* %"+ returnVar);
 
-    while (getline(infile, line))
-    { //take lines
-        line.erase(remove(line.begin(), line.end(), '\t'), line.end()); // removes all tab characters
-        line.erase(remove(line.begin(), line.end(), ' '), line.end());  //removes all spaces
-        lines.push_back(line);
+    chooseCondPrint(expr2, "eq", condVar, returnVar);
+    chooseCondPrint(expr3, "sgt", condVar, returnVar);
+    chooseCondPrint(expr4, "slt", condVar, returnVar);
+
+    chooseNamer++; //update
+    condNamer = 0;
+
+    string tempReturnVar = varNamer(); //returning the returnVar's temprory variable
+    otherStatements.push_back("%" + tempReturnVar + " = load i32* %" + returnVar);
+
+    return "%"+tempReturnVar;
+}
+
+//takes an expression
+//checks its validness
+//turns it into a postfix expression and put it into a stack called postfixExp token by token
+
+stack<string> postfix(string expr,stack<string> postfixExp){
+    stack<string> revPostfix; //stores expression in a reverse order
+    string var = "";
+    bool takingChoose = false; //when a choose function comes, taking until choose finishes
+    string prevOper = ""; //for checking existence of consequtive operators
+    string nestedChoose; //if there are nested chosose functions, stores parts of the function to take the all function 
+    int nested=0;
+    int nestedParantheses = 0;  //number of nested parantheses
+
+    for (char ch : expr) { //checking character by character
+
+        if(takingChoose){ //if there is a choose function
+            
+            if(ch != ')'){ //if closed parantheses has not yet come
+                if (ch == expr.back() && expr.find(ch)==(expr.size()-1) ) //if reached the end while expecting ')' throws error
+                {
+                    errorHandling(lineNumber);
+                }
+
+                if(ch == '('){ 
+                    if(var.find("choose")<var.size()){ //checks the variable for existence of nested choose
+                        nestedChoose = nestedChoose + var + ch;
+                        var = "";
+                        nested++;
+                    } else {
+                        nestedParantheses++; //making a warning for nested parantheses
+                    }
+                } else {
+                var = var + ch;
+                }
+            } else { // character equals ')'
+                if(nestedParantheses>0){  //update for the warning
+                    nestedParantheses--;
+                }else{
+                    if(nested){
+                        var = var + ch;
+                        nested--;
+                        continue;
+                    } else { // choose function taking is finished
+                        var = "choose(" + nestedChoose + var + ")";
+                        revPostfix.push(var); //puts it into the stack
+                        var = "";
+                        prevOper = "";
+                        takingChoose = false;
+                    }
+                }
+            }
+
+        } else if (operators.find(ch) < operators.length()) { // ch is an operator
+
+            if(ch == expr.back() && ch != ')' ){  // The last character of the string can not be an operator except ")", a variable is expected
+                errorHandling(lineNumber); 
+            }
+
+            if(prevOper != "" ){  // checks validness of consequtive elements
+                if(ch == ')'){   //only +( and )+ and )) and (( is valid, others are invalid
+                    if(prevOper != ")"){
+                        errorHandling(lineNumber);
+                    }
+                } else if(prevOper == "("){
+                    if(ch != '('){
+                        errorHandling(lineNumber);
+                    }
+                }else if(prevOper != ")" && ch != '('){
+                    errorHandling(lineNumber);  
+                } 
+            }
+            string s(1,ch); //turn char to string
+            prevOper = s;
+
+            if(ch == '('){  // detecting choose
+                if(var=="choose"){
+                    var="";
+                    takingChoose = true; //for taking choose
+                    continue; 
+                }
+            }
+
+            if (var != "") {
+                revPostfix.push(var); //push prev var to postfix
+                var = "";
+            }
+
+            if (oper.empty()) {  // if operator stack is empty
+                if(ch == ')'){  // '(' was expected
+                    errorHandling(lineNumber);
+                }
+                oper.push(ch); // or directly put operator to stack
+            } else { // ,f stack is not empty
+                if (ch == ')') {
+                    while (oper.top() != '(') //found a closed parantheses pop all the elements until reaching '('
+                    {
+                        string opTop(1, oper.top());
+                        revPostfix.push(opTop);
+                        oper.pop();
+                    
+                        if(oper.empty()){ //'(' was expected, reached the end however
+                        errorHandling(lineNumber); 
+                        }
+                    }                    
+                    oper.pop(); 
+                } else {  //if not equals '('
+                    while (!oper.empty() && ch != '(' && oper.top() != '('){ //checks precedence until reaching '('
+                        if (smaller.find(oper.top()) < 2 && bigger.find(ch) < 2){ // if char is a operator with bigger precedence
+                            break;
+                        }
+                        string opTop(1, oper.top());
+                        revPostfix.push(opTop);
+                        oper.pop();
+                    }
+                    oper.push(ch);
+                }
+            }
+
+        } else { //character is a variable
+            var = var + ch;
+            prevOper = "";
+        }
     }
 
-    outfile << "; ModuleID = 'mylang2ir'" << endl;
-    outfile << "declare i32 @printf(i8*, ...)" << endl;
-    outfile << "@print.str = constant [4 x i8] c\"%d\\0A\\00\"" << endl;
-    outfile << "@print.str1 = constant [23 x i8] c\"Line %d: syntax error\\0A\\00\"" << endl;
-    outfile << "define i32 @main() {" << endl; // main starts
+    if (var != "") {
+        revPostfix.push(var); //push prev var to postfix
+        var = "";
+    }
 
-    //main for loop
-    for (; lineNumber < lines.size(); lineNumber++)
+    while(!oper.empty()){//push all operators left to stack
+        string opTop(1, oper.top());
+        revPostfix.push(opTop);
+        oper.pop();
+    }
+
+    while (!revPostfix.empty())  //reverse the stack
     {
-        mainLoop(lines, lineNumber, nOfLoops);
+        postfixExp.push(revPostfix.top()); 
+        revPostfix.pop();
+    }
+    return postfixExp;
+}
+
+//takes expression as a parameter and writes statements to evaluate the expression
+
+string evaluate(string expr){
+    if (expr == "") //checks whether given expression is null
+    {
+        errorHandling(lineNumber);
+    }
+    
+    stack<string> postfixExp;
+
+    postfixExp = postfix(expr,postfixExp); //making new postfix expression
+    if (postfixExp.size() == 1){   //if there is only a number inside just return number
+
+        if(isValidNumber(postfixExp.top())){ //checks before its a valid number
+            return postfixExp.top(); 
+        } else {
+            string singleVar;
+            string loadVar;
+            if(postfixExp.top().find("choose")<postfixExp.top().size()){  //if the expression is a choose function, calls choose function
+                return choose(postfixExp.top());  //returns the temprory variable that came from the function
+            } else if(isValidVariable(postfixExp.top())){ //if it is a valid var
+                singleVar = varNamer();
+                otherStatements.push_back("%" + singleVar + " = load i32* %" + postfixExp.top());  //makes a temp var and sends it
+                return "%" + singleVar;
+            } else {
+                errorHandling(lineNumber);
+            }
+        }
     }
 
-    for(string str: declareStatements){
-        outfile << str << endl;
-    }
-    for(string str: otherStatements){
-        outfile << str << endl;
+    stack<pair<string,bool>> taken; //stores variables or evaluated expression parts
+    string returnVar = varNamer();
+    declareVariable(returnVar);  // This will be returned
+
+    while (!postfixExp.empty())  { // until expression finishes
+
+        string s_top = postfixExp.top(); //string on the top
+
+        if (!(operators.find(s_top) < operators.length()) || (s_top.find("choose(")<s_top.size())){ //s_top is not an operator
+            taken.push(make_pair(s_top,false)); // simply push it to stack, it's a variable or a choose function
+            postfixExp.pop(); 
+
+        } else { //s_top is an operator
+
+            bool isTempVar1, isTempVar2; //to avoid declaration of temprory variables 
+
+            string var2 = taken.top().first; //take variable
+            if(var2.find("choose(")<var2.size()){  //check if it is a choose function
+                var2 = choose(var2); //temp var returned 
+                isTempVar2 = true;  
+            } else {
+                isTempVar2 = taken.top().second; 
+            }
+            taken.pop();
+             
+            string var1 = taken.top().first;  //making same thing for other variable
+            if(var1.find("choose(")<var1.size()){
+                var1 = choose(var1);
+                isTempVar1 = true;
+            } else {
+                isTempVar1 = taken.top().second;
+            }
+            taken.pop();
+
+            string operation;  //determine what is the operator
+            if(s_top == "+"){
+                operation = "add";
+            }else if(s_top == "-"){
+                operation = "sub";    
+            }else if(s_top == "*"){
+                operation = "mul";    
+            }else{
+                operation = "sdiv";
+            }
+
+            string operand1, operand2;  //determining operands for the expression
+            
+            if(!isValidNumber(var1)){   //if var1 iis not a number
+                isValidVariable(var1,isTempVar1);  //if it is a valid variable or a temp variable
+                 if(!isTempVar1){ //if a valid var
+                    operand1 = "%"+varNamer();  //make the operand as a temp var
+                    otherStatements.push_back( operand1 + " = load i32* %" + var1); //load its value to a temp var
+                 } else {
+                     operand1 = var1;
+                 }
+            } else {  //if var1 is a number
+                otherStatements.push_back("store i32 "+ var1 +", i32* %" + returnVar);  //use the returnVar above for loading its value to a var
+                operand1 = "%"+varNamer();
+                otherStatements.push_back( operand1 + " = load i32* %" + returnVar);
+            }
+
+            if(!isValidNumber(var2)){  //making similar things for var2
+                 isValidVariable(var2,isTempVar2);
+                if(!isTempVar2){ 
+                    operand2 = "%"+varNamer();
+                    otherStatements.push_back( operand2 + " = load i32* %" + var2);
+                } else {
+                     operand2 = var2;
+                }
+            } else {
+                operand2 = var2;
+            }
+      
+            string pushVar = "%" + varNamer();  //temp variable to store the value of the operation
+            otherStatements.push_back(pushVar+" = " + operation + " i32 " + operand1 + ", " + operand2);  //operation
+
+            postfixExp.pop(); //pop the operator 
+            taken.push(make_pair(pushVar,true));  //push the operation
+
+        }
     }
 
-    outfile << "ret i32 0" << endl; //return 0
-    outfile << "}" << endl;         //end of main
-    return 0;
+    string topVar = taken.top().first;
+    taken.pop();
+    return topVar; //return the temp variable that stores the value of the expression
 }
