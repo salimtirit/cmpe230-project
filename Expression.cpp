@@ -31,7 +31,7 @@ void declareVariable(string name, int value = 0)
 {
     if (variables.find(name) == variables.end()) //if it's not declared before
     {
-        if(name == "if"||name == "while"||name == "choose"){
+        if(name == "if"||name == "while"||name == "choose"||name == "print"){
             errorHandling(lineNumber);
         }
         string str1 =  "%" + name + " = alloca i32";
