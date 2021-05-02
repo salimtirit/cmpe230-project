@@ -314,7 +314,6 @@ stack<string> postfix(string expr,stack<string> postfixExp){
     while (!revPostfix.empty())  //reverse the stack
     {
         postfixExp.push(revPostfix.top()); 
-        //cout << revPostfix.top() << endl;
         revPostfix.pop();
     }
     return postfixExp;
