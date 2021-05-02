@@ -31,6 +31,9 @@ void declareVariable(string name, int value = 0)
 {
     if (variables.find(name) == variables.end()) //if it's not declared before
     {
+        if(name == "if"||name == "while"||name == "choose"){
+            errorHandling(lineNumber);
+        }
         string str1 =  "%" + name + " = alloca i32";
         declareStatements.push_back(str1);
     }
@@ -192,8 +195,7 @@ stack<string> postfix(string expr,stack<string> postfixExp){
     bool takingChoose = false; //when a choose function comes, taking until choose finishes
     string prevOper = ""; //for checking existence of consequtive operators
     string nestedChoose; //if there are nested chosose functions, stores parts of the function to take the all function 
-    int nested=0;
-    int nestedParantheses = 0;  //number of nested parantheses
+    int nested=0;//number of nested parantheses
 
     for (char ch : expr) { //checking character by character
 
@@ -206,24 +208,16 @@ stack<string> postfix(string expr,stack<string> postfixExp){
                 }
 
                 if(ch == '('){ 
-                    if(var.find("choose")<var.size()){ //checks the variable for existence of nested choose
-                        nestedChoose = nestedChoose + var + ch;
-                        var = "";
-                        nested++;
-                    } else {
-                        nestedParantheses++; //making a warning for nested parantheses
-                    }
-                } else {
-                var = var + ch;
+                   nested++;
                 }
+                var = var + ch;
             } else { // character equals ')'
-                if(nestedParantheses>0){  //update for the warning
-                    nestedParantheses--;
+                if(nested>0){  //update for the warning
+                    nested--;
+                    var = var + ch;
                 }else{
-                    if(nested){
-                        var = var + ch;
-                        nested--;
-                        continue;
+                    if(nested<0){
+                        errorHandling(lineNumber);
                     } else { // choose function taking is finished
                         var = "choose(" + nestedChoose + var + ")";
                         revPostfix.push(var); //puts it into the stack
@@ -320,6 +314,7 @@ stack<string> postfix(string expr,stack<string> postfixExp){
     while (!revPostfix.empty())  //reverse the stack
     {
         postfixExp.push(revPostfix.top()); 
+        //cout << revPostfix.top() << endl;
         revPostfix.pop();
     }
     return postfixExp;

@@ -134,8 +134,8 @@ void mainLoop(vector<string> lines, int &lineNumber, int &nOfLoops)
     }
     else if (i.find("print(") < i.size()) //print statement for llvm
     {
-        int openPosition = i.find("(");
-        int closePosition = i.find(")"); 
+        int openPosition = i.find_first_of("(");
+        int closePosition = i.find_last_of(")"); 
         if(i.substr(0,openPosition)!="print" || i.substr(closePosition+1)!=""){
             errorHandling(lineNumber); //there must be nothing before or after print(<var>)
         }
@@ -166,7 +166,7 @@ void errorHandling(int line){
 int main(int argc, char const *argv[])
 {
     string inputFile = argv[1];  // input files name will be the first argument      
-    string outputFile = inputFile.substr(0,inputFile.find("my"))+"ll";  // output file will have the same name with "ll" extension 
+    string outputFile = inputFile.substr(0,inputFile.find(".my"))+".ll";  // output file will have the same name with "ll" extension 
 
     infile.open(inputFile);
     outfile.open(outputFile);
