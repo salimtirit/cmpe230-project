@@ -105,7 +105,9 @@ whend:
 The first 3 lines of code defines the module name and the prototype for the **printf** output
 statement. This part is generated as it is shown in the above example.
 
-The line starting with call is for printing the value of a variable using the **printf** function.
+The line starting with _call_ is for printing the value of a variable using the **printf** function.
+
+Check the detailed explanation of the code in the [project report](./Project Report.pdf)
 
 ## Running the Program
 
