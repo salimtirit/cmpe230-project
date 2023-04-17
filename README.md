@@ -107,7 +107,7 @@ statement. This part is generated as it is shown in the above example.
 
 The line starting with _call_ is for printing the value of a variable using the **printf** function.
 
-Check the detailed explanation of the code in the [project report](./Project Report.pdf)
+Check the detailed explanation of the code in the [project report](https://github.com/salimtirit/Interpreter-project/blob/main/Project%20Documentation.pdf)
 
 ## Running the Program
 
