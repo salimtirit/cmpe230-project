@@ -110,6 +110,16 @@ The line starting with _call_ is for printing the value of a variable using the 
 Check the detailed explanation of the code in the [project report](https://github.com/salimtirit/Interpreter-project/blob/main/Project%20Documentation.pdf)
 
 ## Running the Program
+| Command | Explanation |
+| --- | --- |
+| make | Exacutes commands in makefile and creates exacutable named **mylang2ir**|
+| mylang2ir file.my | Runs mylang2ir on file.my and produces IR code in file.ll |
+| lli file.ll | Runs the llvm interpreter & dynamic compiler. For the above example, this command produces the output: <br> 1 <br> 2 <br> 3 <br> 5 <br> 8 <br> 13 <br> 21 <br> 34 <br> 55 <br> 89 |
+| llc file.ll –o file.s | Invokes llc compiler to produce assembler code |
+| clang file.s -o file.exe | Compiles assembler code to produce the executable |
+| ./file.exe | Runs the executable. For the above example, this command produces theoutput: <br> 1 <br> 2 <br> 3 <br> 5 <br> 8 <br> 13 <br> 21 <br> 34 <br> 55 <br> 89 |
+
+
 
 
 ## Contributing
